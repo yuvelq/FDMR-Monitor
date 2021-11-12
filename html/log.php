@@ -2,19 +2,17 @@
 $progname = basename($_SERVER['SCRIPT_FILENAME'],".php");
 include_once 'include/config.php';
 ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="refresh" content="30">
-<title>DMR Server monitor - STATUS</title>
-<script type="text/javascript" src="scripts/hbmon.js"></script>
+<title>FreeDMR Monitor - STATUS</title>
 <link rel="stylesheet" type="text/css" href="css/styles.php" />
 <meta name="description" content="Copyright (c) 2016-2021.The Regents of the K0USY Group. All rights reserved. Version SP2ONG 2019-2021 (v20210515)" />
 </head>
 <body style="background-color: #d0d0d0;font: 10pt arial, sans-serif;">
-<center><div style="width:1250px; text-align: center; margin-top:5px;">
+<div align="center"><div style="width:1250px; text-align: center; margin-top:5px;">
 <img src="img/logo.png?random=323527528432525.24234" alt="" />
 </div>
 <div style="width: 1150px;">
@@ -114,6 +112,6 @@ Copyright (c) 2016-2021<br>The Regents of the <a target="_blank" href=http://k0u
 <font size="-2">&copy; developed by DL1BZ as logging-extension of HBmonitor (2018,2019)</font><br>
 </p>
 </div>
-</center>
+</div>
 </body>
 </html>

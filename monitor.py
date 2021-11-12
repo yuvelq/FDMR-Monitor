@@ -49,7 +49,7 @@ from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerF
 
 # Specific functions to import from standard modules
 from time import time, strftime, localtime
-from pickle import loads
+from pickle import loads, dump, load
 from binascii import b2a_hex as h
 from os.path import getmtime
 from collections import deque
@@ -61,6 +61,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 # Utilities from K0USY Group sister project
 from dmr_utils3.utils import int_id, try_download, bytes_4
 from json import load as jload
+from csv import DictReader as csv_dict_reader
 
 # Configuration variables and constants
 from config import *
@@ -107,6 +108,11 @@ BTABLE['SETUP']['BRIDGES'] = BRIDGES_INC
 # create empty systems list
 sys_list = []
 
+# CONSTANTS
+SUB_FIELDS   = ('id', 'callsign', 'fname', 'surname', 'city', 'state', 'country')
+PEER_FIELDS  = ('id', 'call_sign', 'city', 'state')
+TGID_FIELDS  = ('id', 'callsign')
+
 # OPB Filter for lastheard
 def get_opbf():
    if len(OPB_FILTER) !=0:
@@ -115,10 +121,12 @@ def get_opbf():
        mylist = []
    return mylist
 
+
 # For importing HTML templates
 def get_template(_file):
     with open(_file, 'r') as html:
         return html.read()
+
 
 # LONG VERSION - MAKES A FULL DICTIONARY OF INFORMATION BASED ON TYPE OF ALIAS FILE
 # BASED ON DOWNLOADS FROM RADIOID.NET     
@@ -127,36 +135,39 @@ def mk_full_id_dict(_path, _file, _type):
     _dict = {}
     try:
         with open(_path+_file, 'r', encoding='latin1') as _handle:
-            records = jload(_handle)
-            if 'count' in [*records]:
-                records.pop('count')
-            records = records[[*records][0]]
-            _handle.close
+            if _file.split('.')[1] == 'csv':
+                if _type == 'subscriber':
+                    fields = SUB_FIELDS
+                elif _type == 'peer':
+                    fields = PEER_FIELDS
+                elif _type == 'tgid':
+                    fields = TGID_FIELDS
+                records = csv_dict_reader(_handle, fieldnames=fields, restkey='OTHER', dialect='excel', delimiter=',')
+            
+            else:       
+                records = jload(_handle)
+                if 'count' in [*records]:
+                    records.pop('count')
+                records = records[[*records][0]]
+                
             if _type == 'peer':
                 for record in records:
                     try:
                         _dict[int(record['id'])] = {
                             'CALLSIGN': record['callsign'],
                             'CITY': record['city'],
-                            'STATE': record['state'],
-                            'COUNTRY': record['country'],
-                            'FREQ': record['frequency'],
-                            'CC': record['color_code'],
-                            'OFFSET': record['offset'],
-                            'LINKED': record['ts_linked'],
-                            'TRUSTEE': record['trustee'],
-                            'NETWORK': record['ipsc_network']
-                        }
+                            'STATE': record['state']}
                     except:
                         pass
+
             elif _type == 'subscriber':
                 for record in records:
                     # Try to craete a string name regardless of existing data
-                    if (('surname' in record.keys()) and ('fname'in record.keys())):
+                    if 'surname' in record and 'fname'in record:
                         _name = str(record['fname'])
-                    elif 'fname' in record.keys():
+                    elif 'fname' in record:
                         _name = str(record['fname'])
-                    elif 'surname' in record.keys():
+                    elif 'surname' in record:
                         _name = str(record['surname'])
                     else:
                         _name = 'NO NAME'
@@ -166,22 +177,22 @@ def mk_full_id_dict(_path, _file, _type):
                             'CALLSIGN': record['callsign'],
                             'NAME': _name,
                             'CITY': record['city'],
-                            'STATE': record['state'],
-                            'COUNTRY': record['country']
-                        }
+                            'STATE': record['state'],}
                     except:
                         pass
+
             elif _type == 'tgid':
                 for record in records:
                     try:
                         _dict[int(record['id'])] = {
-                            'NAME': record['callsign']
-                        }
+                            'NAME': record['callsign']}
                     except:
                         pass
         return _dict
-    except IOError:
+
+    except:
         return _dict
+
 
 # THESE ARE THE SAME THING FOR LEGACY PURPOSES
 # moved from dmr_urils3
@@ -604,29 +615,30 @@ def build_stats():
     if True: #now > build_time + 1:
         if CONFIG:
              main = 'i' + itemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
-             dashboard_server.broadcast(main)
+             dashboard_server.broadcast(main, 'main')
              peers = 'p' + ptemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
-             dashboard_server.broadcast(peers)
+             dashboard_server.broadcast(peers, 'peers')
              masters = 'c' + ctemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'],emaster=EMPTY_MASTERS)
-             dashboard_server.broadcast(masters)
+             dashboard_server.broadcast(masters, 'masters')
              opb = 'o'+ otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
-             dashboard_server.broadcast(opb)
+             dashboard_server.broadcast(opb, 'opb')
         if BRIDGES and BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
             bridges = 'b' + btemplate.render(_table=BTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
-            dashboard_server.broadcast(bridges)
+            dashboard_server.broadcast(bridges, 'bridge')
         build_time = now
 
 
 def timeout_clients():
     now = time()
     try:
-        for client in dashboard_server.clients:
-            if dashboard_server.clients[client] + CLIENT_TIMEOUT < now:
-                logger.info('TIMEOUT: disconnecting client %s', dashboard_server.clients[client])
-                try:
-                    dashboard.sendClose(client)
-                except Exception as e:
-                    logger.error('Exception caught parsing client timeout %s', e)
+        for group in dashboard_server.clients:
+            for client in dashboard_server.clients[group]:
+                if dashboard_server.clients[group][client] + CLIENT_TIMEOUT < now:
+                    logger.info('TIMEOUT: disconnecting client %s', dashboard_server.clients[client])
+                    try:
+                        dashboard.sendClose(client)
+                    except Exception as e:
+                        logger.error('Exception caught parsing client timeout %s', e)
     except:
         logger.info('CLIENT TIMEOUT: List does not exist, skipping. If this message persists, contact the developer')
 
@@ -832,7 +844,7 @@ def process_message(_bmessage):
             else:
                 log_message = '{} UNKNOWN GROUP VOICE LOG MESSAGE'.format(_now[10:19])
 
-            dashboard_server.broadcast('l' + log_message)
+            dashboard_server.broadcast('l' + log_message, 'all_clients')
             LOGBUF.append(log_message)
 
         else:
@@ -872,7 +884,7 @@ class reportClientFactory(ReconnectingClientFactory):
     def startedConnecting(self, connector):
         logging.info('Initiating Connection to Server.')
         if 'dashboard_server' in locals() or 'dashboard_server' in globals():
-            dashboard_server.broadcast('q' + 'Connection to HBlink Established')
+            dashboard_server.broadcast('q' + 'Connection to HBlink Established', 'all_clients')
 
     def buildProtocol(self, addr):
         logging.info('Connected.')
@@ -887,7 +899,7 @@ class reportClientFactory(ReconnectingClientFactory):
         BTABLE['BRIDGES'].clear()
         logging.info('Lost connection.  Reason: %s', reason)
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
-        dashboard_server.broadcast('q' + 'Connection to HBlink Lost')
+        dashboard_server.broadcast('q' + 'Connection to HBlink Lost', 'all_clients')
 
     def clientConnectionFailed(self, connector, reason):
         logging.info('Connection failed. Reason: %s', reason)
@@ -899,7 +911,11 @@ class reportClientFactory(ReconnectingClientFactory):
 #
 
 class dashboard(WebSocketServerProtocol):
-    global INFO, MONITOR, OPENBRIDGE
+    #global INFO, MONITOR, OPENBRIDGE
+
+    #def __init__(self):
+    #    self.group = None
+
     def onConnect(self, request):
         logging.info('Client connecting: %s', request.peer)
 
@@ -909,23 +925,32 @@ class dashboard(WebSocketServerProtocol):
         #else:
         #      ddbridges = False
         logging.info('WebSocket connection open.')
-        self.factory.register(self)
-        if BRIDGES and BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
-           self.sendMessage(('b' + btemplate.render(_table=BTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
-        self.sendMessage(('c' + ctemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'],emaster=EMPTY_MASTERS)).encode('utf-8'))
-        self.sendMessage(('p' + ptemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
-        self.sendMessage(('o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
-        self.sendMessage(('i' + itemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
-        for _message in LOGBUF:
-            if _message:
-                _bmessage = ('l' + _message).encode('utf-8')
-                self.sendMessage(_bmessage)
-                
+
     def onMessage(self, payload, isBinary):
         if isBinary:
             logging.info('Binary message received: %s bytes', len(payload))
         else:
+            msg = payload.decode('utf-8').split(',')
             logging.info('Text message received: %s', payload)
+            if msg[0] == 'conf':
+                for group in msg[1:]:
+                    if group in ('main', 'bridge', 'masters', 'opb', 'peers'):
+                        self.factory.register(self, group)
+                        if group == 'bridge':
+                            if BRIDGES and BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
+                                self.sendMessage(('b' + btemplate.render(_table=BTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
+                        elif group == 'masters':
+                           self.sendMessage(('c' + ctemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'],emaster=EMPTY_MASTERS)).encode('utf-8'))
+                        elif group== 'peers':
+                            self.sendMessage(('p' + ptemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
+                        elif group == 'opb':
+                            self.sendMessage(('o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
+                        elif group == 'main':
+                            self.sendMessage(('i' + itemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
+                        # for _message in LOGBUF:
+                        #     if _message:
+                        #         _bmessage = ('l' + _message).encode('utf-8')
+                        #         self.sendMessage(_bmessage)
 
     def connectionLost(self, reason):
         WebSocketServerProtocol.connectionLost(self, reason)
@@ -933,28 +958,33 @@ class dashboard(WebSocketServerProtocol):
 
     def onClose(self, wasClean, code, reason):
         logging.info('WebSocket connection closed: %s', reason)
+        #self.factory.unregister(self)
+
 
 class dashboardFactory(WebSocketServerFactory):
 
     def __init__(self, url):
         WebSocketServerFactory.__init__(self, url)
-        self.clients = {}
+        self.clients = {'all_clients':{}, 'main':{}, 'bridge':{}, 'masters':{}, 'opb':{}, 'peers':{}}
 
-    def register(self, client):
-        if client not in self.clients:
-            logging.info('registered client %s', client.peer)
-            self.clients[client] = time()
+    def register(self, client, group):
+        if client not in self.clients[group]:
+            self.clients[group][client] = time()
+            logging.info(f'registered client {client.peer} to group {group}')
+        if client not in self.clients['all_clients']:
+            self.clients['all_clients'][client] = time()
 
     def unregister(self, client):
-        if client in self.clients:
-            logging.info('unregistered client %s', client.peer)
-            del self.clients[client]
+        logging.info(f'unregistered client {client.peer}')
+        for group in self.clients:
+            if client in self.clients[group]:
+                del self.clients[group][client]
 
-    def broadcast(self, msg):
-        logging.debug('broadcasting message to: %s', self.clients)
-        for c in self.clients:
-            c.sendMessage(msg.encode('utf8'))
-            logging.debug('message sent to %s', c.peer)
+    def broadcast(self, msg, group):
+        logging.debug('broadcasting message to: %s', self.clients[group])
+        for client in self.clients[group]:
+            client.sendMessage(msg.encode('utf8'))
+            logging.debug('message sent to %s', client.peer)
 
 ######################################################################
 #
@@ -984,11 +1014,9 @@ if __name__ == '__main__':
       except CalledProcessError as err:
          print(err)
     # Download alias files
-    result = try_download(PATH, PEER_FILE, PEER_URL, (FILE_RELOAD * 86400))
-    logging.info(result)
-
-    result = try_download(PATH, SUBSCRIBER_FILE, SUBSCRIBER_URL, (FILE_RELOAD * 86400))
-    logging.info(result)
+    for file,url in ((PEER_FILE,PEER_URL),(SUBSCRIBER_FILE,SUBSCRIBER_URL),(TGID_FILE,TGID_URL)):
+        result = try_download(PATH, file, url, (FILE_RELOAD * 86400))
+        logging.info(result)
 
     # Make Alias Dictionaries
     peer_ids = mk_full_id_dict(PATH, PEER_FILE, 'peer')
