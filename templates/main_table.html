@@ -59,9 +59,45 @@
 {% endif %}
 </table>
 </fieldset>
+
 {% if _table['SETUP']['LASTHEARD'] == True %}
-  {% include 'lastheard.html' ignore missing %}
+  <br>
+  <fieldset style="border-radius: 8px; background-color:#f0f0f0f0;margin-left:15px;margin-right:15px;font-size:14px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
+    <legend>
+        <b><font color="#000">&nbsp;.: Lastheard :.&nbsp;</font></b>
+    </legend>
+    <table style="width:100%; font: 10pt arial, sans-serif">
+      <TR class="theme_color" style=" height: 32px;font: 10pt arial, sans-serif;">
+        <TH>Date</TH>
+        <TH>Time</TH>
+        <TH>Callsign (DMR-Id)</TH>
+        <TH>Name</TH>
+        <TH>TG#</TH>
+        <TH>TG Name</TH>
+        <TH>TX (s)</TH>
+        <TH>System</TH>
+      </TR>
+    {% for itm in lastheard %}
+      <TR class="log">
+        <TD>{{ itm[0][:10] }}</TD>
+        <TD>{{ itm[0][11:16] }}</TD>
+      {% if itm[11]|length == 1 or itm[11][0] == 'N0CALL' or itm[11][0] == 'NOCALL' %}
+        <TD><b><font color=#464646>{{ itm[11][0] }}</font></b></TD>
+        <TD><font color=#002d62><b></b></font></TD>
+      {% else %}
+        <TD><a style="font: 9pt arial,sans-serif;font-weight:bold;color:#0066ff;" target="_blank" href=https://qrz.com/db/{{itm[11][0]}}>{{ itm[11][0] }}</a></b><span style="font: 7pt arial,sans-serif">({{ itm[10] }})</span></TD>
+        <TD><font color=#002d62><b>{{ itm[11][1] }}</b></font></TD>
+      {% endif %}
+        <TD><font color=#b5651d><b>{{ itm[8] }}</b></font></TD>
+        <TD><font color=green><b>{{ itm[9] }}</b></font></TD>
+        <TD style="{{ 'background-color:#1d1' if itm[1] == 'DATA' else None }}">{{ 'DATA' if itm[1] == 'DATA' else itm[1]|int }}</TD>
+        <TD>{{ itm[4] }}</TD>
+      </TR>
+    {% endfor %}
+    </table>
+  </fieldset><br>
 {% endif %}
+
 <fieldset style="background-color:#f0f0f0f0;margin-left:15px;margin-right:15px;font-size:14px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
 <legend><b><font color="#000">&nbsp;.: Connected to Server :.&nbsp;</font></b></legend>
 <table style="table-layout:fixed;width:100%; font: 10pt arial, sans-serif;font-weight:600;margin-top:5px;margin-bottom:5px;border:none !important;border-collapse:collapse;border:none;" width=100%>
