@@ -81,7 +81,7 @@ BTABLE      = {'BRIDGES': {}, 'SETUP': {}}
 BRIDGES_RX  = ''
 CONFIG_RX   = ''
 LOGBUF      = deque(100*[''], 100)
-lastheard   = deque(maxlen=LASTHEARD_LENGTH)
+lastheard   = deque(maxlen = LASTHEARD_ROWS)
 GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'masters': {}, 'opb': {}, 'peers': {}}
 
 RED         = 'ff6600'
@@ -280,7 +280,7 @@ def lastheard_hdl(p):
                         lastheard.append([date, row[9], row[0][39:50], row[1], row[3], row[5], alias_call(int(row[5]), subscriber_ids),
                                 row[7], row[8], alias_tgid(int(row[8]), talkgroup_ids), row[6], alias_short(int(row[6]), subscriber_ids).split(',')])
                         count += 1
-                        if count >= LASTHEARD_LENGTH: break
+                        if count >= LASTHEARD_ROWS: break
             logger.info(f'{count} entries imported from log file.')
 
     elif p == 'save':

@@ -1,6 +1,7 @@
 CONFIG_INC      = True                           # Include HBlink stats
 HOMEBREW_INC    = True                           # Display Homebrew Peers status
 LASTHEARD_INC   = True                           # Display lastheard table on main page
+LASTHEARD_ROWS  = 20
 BRIDGES_INC     = False                          # Display Bridge status and button
 EMPTY_MASTERS   = False                          # Display Enable (True) or DISABLE (False) empty masters in status
 #
@@ -26,6 +27,7 @@ FILE_RELOAD     = 15                              # Number of days before we rel
 PEER_URL        = 'https://database.radioid.net/static/rptrs.json'
 SUBSCRIBER_URL  = 'https://database.radioid.net/static/user.csv'
 TGID_URL        = 'http://downloads.freedmr.uk/downloads/talkgroup_ids.json'
+
 # Settings for log files
 LOG_PATH        = './log/'                       # MUST END IN '/'
 LOG_NAME        = 'hbmon.log'
