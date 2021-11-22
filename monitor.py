@@ -29,31 +29,21 @@
 
 # Standard modules
 import logging
-import sys
-import datetime
-
-import os
-import csv
-from itertools import islice
-from subprocess import check_call, CalledProcessError
+from os import write
 
 # Twisted modules
 from twisted.internet.protocol import ReconnectingClientFactory, Protocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 
-import base64
-
 # Autobahn provides websocket service under Twisted
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 
 # Specific functions to import from standard modules
 from time import time, strftime, localtime
-from pickle import loads, dump, load
-from binascii import b2a_hex as h
-from os.path import getmtime
+from pickle import loads, dump as pkl_dump, load as pkl_load
+from os.path import isfile
 from collections import deque
-from time import time
 
 # Web templating environment
 from jinja2 import Environment, PackageLoader, select_autoescape
@@ -61,10 +51,11 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 # Utilities from K0USY Group sister project
 from dmr_utils3.utils import int_id, try_download, bytes_4
 from json import load as jload
-from csv import DictReader as csv_dict_reader
+from csv import DictReader as csv_dict_reader, reader as csv_reader
 
 # Configuration variables and constants
 from config import *
+
 
 # SP2ONG - Increase the value if HBlink link break occurs
 NetstringReceiver.MAX_LENGTH = 500000000
@@ -90,6 +81,8 @@ BTABLE      = {'BRIDGES': {}, 'SETUP': {}}
 BRIDGES_RX  = ''
 CONFIG_RX   = ''
 LOGBUF      = deque(100*[''], 100)
+lastheard   = deque(maxlen=LASTHEARD_LENGTH)
+GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'masters': {}, 'opb': {}, 'peers': {}}
 
 RED         = 'ff6600'
 BLACK       = '000000'
@@ -121,12 +114,10 @@ def get_opbf():
        mylist = []
    return mylist
 
-
 # For importing HTML templates
 def get_template(_file):
     with open(_file, 'r') as html:
         return html.read()
-
 
 # LONG VERSION - MAKES A FULL DICTIONARY OF INFORMATION BASED ON TYPE OF ALIAS FILE
 # BASED ON DOWNLOADS FROM RADIOID.NET     
@@ -134,7 +125,7 @@ def get_template(_file):
 def mk_full_id_dict(_path, _file, _type):
     _dict = {}
     try:
-        with open(_path+_file, 'r', encoding='latin1') as _handle:
+        with open(_path+_file, 'r', encoding='utf8') as _handle:
             if _file.split('.')[1] == 'csv':
                 if _type == 'subscriber':
                     fields = SUB_FIELDS
@@ -175,9 +166,9 @@ def mk_full_id_dict(_path, _file, _type):
                     try:
                         _dict[int(record['id'])] = {
                             'CALLSIGN': record['callsign'],
-                            'NAME': _name,
-                            'CITY': record['city'],
-                            'STATE': record['state'],}
+                            'NAME': _name,}
+                            #'CITY': record['city'],
+                            #'STATE': record['state'],}
                     except:
                         pass
 
@@ -189,10 +180,9 @@ def mk_full_id_dict(_path, _file, _type):
                     except:
                         pass
         return _dict
-
+    
     except:
         return _dict
-
 
 # THESE ARE THE SAME THING FOR LEGACY PURPOSES
 # moved from dmr_urils3
@@ -267,12 +257,49 @@ def since(_time):
     else:
         return '{}s'.format(seconds)
 
+
+def lastheard_hdl(p):
+    if p == 'get':
+        if isfile('lastheard.pkl'):
+            with open('lastheard.pkl', 'rb') as fh:
+                temp_pkl = pkl_load(fh)
+            for item in reversed(temp_pkl):
+                lastheard.appendleft(item)
+            logger.info(f'{len(lastheard)} entries imported from lastheard.pkl')
+
+        else:
+            temp_id = []
+            count = 0
+            with open(LOG_PATH+LOG_NAME, 'r', encoding='utf8' ) as logfile:
+                temp_q = deque(csv_reader(logfile), 200)
+                for row in reversed(temp_q):
+                    if len(row) < 10 or row[1] != 'END' or row[2] != 'RX' or float(row[9]) < 1: continue
+                    if row[6] not in temp_id:
+                        temp_id.append(row[6])
+                        date = row[0][:19]
+                        lastheard.append([date, row[9], row[0][39:50], row[1], row[3], row[5], alias_call(int(row[5]), subscriber_ids),
+                                row[7], row[8], alias_tgid(int(row[8]), talkgroup_ids), row[6], alias_short(int(row[6]), subscriber_ids).split(',')])
+                        count += 1
+                        if count >= LASTHEARD_LENGTH: break
+            logger.info(f'{count} entries imported from log file.')
+
+    elif p == 'save':
+        with open('lastheard.pkl', 'wb') as fh:
+            pkl_dump(lastheard,fh)
+        logger.debug('lastheard.pkl saved correctly')
+
+
+def error_hdl(failure):
+    # Called when loop execution failed.
+    logger.error(failure.getBriefTraceback())
+    #reactor.stop()
+
+
 def cleanTE():
 ##################################################
 # Cleaning entries in tables - Timeout (5 min) 
 #
-    timeout = datetime.datetime.now().timestamp()
-
+    timeout = time()
     for system in CTABLE['MASTERS']:
         for peer in CTABLE['MASTERS'][system]['PEERS']:
             for timeS in range(1,3):
@@ -608,24 +635,30 @@ def build_bridge_table(_bridges):
 #          THIS CURRENTLY IS A TIMED CALL
 #
 
-build_time = time()
+build_time = 0
 def build_stats():
     global build_time
-    now = time()
-    if True: #now > build_time + 1:
+    if time() - build_time >= 1 or not build_time:
+        # Create a list with active groups
+        active_groups = [group for group, value in GROUPS.items() if value]
         if CONFIG:
-             main = 'i' + itemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
-             dashboard_server.broadcast(main, 'main')
-             peers = 'p' + ptemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
-             dashboard_server.broadcast(peers, 'peers')
-             masters = 'c' + ctemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'],emaster=EMPTY_MASTERS)
-             dashboard_server.broadcast(masters, 'masters')
-             opb = 'o'+ otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
-             dashboard_server.broadcast(opb, 'opb')
+            if 'main' in active_groups:
+                main = 'i' + itemplate.render(_table=CTABLE, dbridges=BTABLE['SETUP']['BRIDGES'], lastheard=lastheard)
+                dashboard_server.broadcast(main, 'main')
+            if 'peers' in active_groups:
+                peers = 'p' + ptemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
+                dashboard_server.broadcast(peers, 'peers')
+            if 'masters' in active_groups:
+                masters = 'c' + ctemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'],emaster=EMPTY_MASTERS)
+                dashboard_server.broadcast(masters, 'masters')
+            if 'opb' in active_groups: 
+                opb = 'o'+ otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
+                dashboard_server.broadcast(opb, 'opb')
         if BRIDGES and BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
-            bridges = 'b' + btemplate.render(_table=BTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
-            dashboard_server.broadcast(bridges, 'bridge')
-        build_time = now
+            if 'bridge' in active_groups:
+                bridges = 'b' + btemplate.render(_table=BTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
+                dashboard_server.broadcast(bridges, 'bridge')
+        build_time = time()
 
 
 def timeout_clients():
@@ -637,8 +670,8 @@ def timeout_clients():
                     logger.info('TIMEOUT: disconnecting client %s', dashboard_server.clients[client])
                     try:
                         dashboard.sendClose(client)
-                    except Exception as e:
-                        logger.error('Exception caught parsing client timeout %s', e)
+                    except Exception as err:
+                        logger.error(f'Exception caught parsing client timeout {err}')
     except:
         logger.info('CLIENT TIMEOUT: List does not exist, skipping. If this message persists, contact the developer')
 
@@ -653,7 +686,7 @@ def rts_update(p):
     sourceSub = int(p[6])
     timeSlot = int(p[7])
     destination = int(p[8])
-    timeout = datetime.datetime.now().timestamp()
+    timeout = time()
     
     if system in CTABLE['MASTERS']:
         for peer in CTABLE['MASTERS'][system]['PEERS']:
@@ -746,7 +779,7 @@ def process_message(_bmessage):
     _now = strftime('%Y-%m-%d %H:%M:%S %Z', localtime(time()))
 
     if opcode == OPCODE['CONFIG_SND']:
-        logging.debug('got CONFIG_SND opcode')
+        logger.debug('got CONFIG_SND opcode')
         CONFIG = load_dictionary(_bmessage)
         CONFIG_RX = strftime('%Y-%m-%d %H:%M:%S', localtime(time()))
         if CTABLE['MASTERS']:
@@ -755,108 +788,81 @@ def process_message(_bmessage):
             build_hblink_table(CONFIG, CTABLE)
 
     elif opcode == OPCODE['BRIDGE_SND']:
-        logging.debug('got BRIDGE_SND opcode')
+        logger.debug('got BRIDGE_SND opcode')
         BRIDGES = load_dictionary(_bmessage)
         BRIDGES_RX = strftime('%Y-%m-%d %H:%M:%S', localtime(time()))
         if BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
            BTABLE['BRIDGES'] = build_bridge_table(BRIDGES)
 
     elif opcode == OPCODE['LINK_EVENT']:
-        logging.info('LINK_EVENT Received: {}'.format(repr(_message[1:])))
+        logger.info('LINK_EVENT Received: {}'.format(repr(_message[1:])))
 
     elif opcode == OPCODE['BRDG_EVENT']:
-        logging.info('BRIDGE EVENT: {}'.format(repr(_message[1:])))
+        logger.info(f'BRIDGE EVENT: {_message[1:]}')
         p = _message[1:].split(",")
-        rts_update(p)
         opbfilter = get_opbf()
-        if p[0] == 'GROUP VOICE' and p[2] != 'TX' and p[5] not in opbfilter:
-            if p[1] == 'END':
-                start_sys=0
-                for x in sys_list:
-                  if x[0]== p[3] and x[1] == p[4]:
-                     sys_list.pop()
-                     start_sys=1
-                     break
-            if p[1] == 'END' and start_sys==1:
-                log_message = '{} {} {}   SYS: {:8.8s} SRC_ID: {:9.9s} TS: {} TGID: {:7.7s} {:17.17s} SUB: {:9.9s}; {:18.18s} Time: {}s '.format(_now[10:19], p[0][6:], p[1], p[3], p[5], p[7],p[8],alias_tgid(int(p[8]),talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids), int(float(p[9])))
-                # log only to file if system is NOT OpenBridge event (not logging open bridge system, name depends on your OB definitions) AND transmit time is LONGER as 2sec (make sense for very short transmits)
-                if LASTHEARD_INC:
-                   # save QSOs to lastheared.log for which transmission duration is longer than 2 sec, 
-                   # use >=0 instead of >2 if you want to record all activities
-                   if int(float(p[9])) > 2: 
-                      log_lh_message = '{},{},{},{},{},{},{},TS{},TG{},{},{},{}'.format(_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8],alias_tgid(int(p[8]),talkgroup_ids),p[6], alias_short(int(p[6]), subscriber_ids))
-                      lh_logfile = open(LOG_PATH+"lastheard.log", "a", encoding="UTF-8", errors="ignore")
-                      lh_logfile.write(log_lh_message + '\n')
-                      lh_logfile.close()
-                      # Lastheard in Dashboard by SP2ONG
-                      my_list=[]
-                      n=0
-                      f = open(PATH+"templates/lastheard.html", "w", encoding="UTF-8", errors="ignore")
-                      f.write("<br><fieldset style=\"border-radius: 8px; background-color:#f0f0f0f0;margin-left:15px;margin-right:15px;font-size:14px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;\">\n")
-                      f.write("<legend><b><font color=\"#000\">&nbsp;.: Lastheard :.&nbsp;</font></b></legend>\n")
-                      f.write("<table style=\"width:100%; font: 10pt arial, sans-serif;background-color:#f1f1f1;\">\n")
-                      f.write("<TR class=\"theme_color\" style=\" height: 32px;font: 10pt arial, sans-serif;\"><TH>Date</TH><TH>Time</TH><TH>Callsign (DMR-Id)</TH><TH>Name</TH><TH>TG#</TH><TH>TG Name</TH><TH>TX (s)</TH><TH>System</TH></TR>\n")
-                      with open(LOG_PATH+"lastheard.log", "r", encoding="UTF-8", errors="ignore") as textfile:
-                          for row in islice(reversed(list(csv.reader(textfile))),200):
-                            duration=row[1]
-                            dur=str(int(float(duration.strip())))
-                            if row[10] not in my_list:
-                               if row[11].strip().isdigit() or row[11] == "N0CALL" or row[11] == "NOCALL":
-                                  qrz = "<b><font color=#464646>"+row[11]+"</font></b>"
-                               else:
-                                  qrz = "<a style=\"font: 9pt arial,sans-serif;font-weight:bold;color:#0066ff;\" target=\"_blank\" href=https://qrz.com/db/"+row[11]+">"+row[11]+"</a></b><span style=\"font: 7pt arial,sans-serif\"> ("+row[10]+")</span>"
-                               if len(row) < 13:
-                                   hline="<TR class=\"log\"><TD>"+row[0][:10]+"</TD><TD>"+row[0][11:16]+"</TD><TD>"+qrz+"</TD><TD><font color=#002d62><b></b></font></TD><TD><font color=#b5651d><b>"+row[8][2:]+"</b></font></TD><TD><font color=green><b>"+row[9]+"</b></font></TD><TD>"+dur+"</TD><TD>"+row[4]+"</TD></TR>"
-                                   my_list.append(row[10])
-                                   n += 1
-                               else:
-                                   hline="<TR class=\"log\"><TD>"+row[0][:10]+"</TD><TD>"+row[0][11:16]+"</TD><TD>"+qrz+"</TD><TD><font color=#002d62><b>"+row[12]+"</b></font></TD><TD><font color=#b5651d><b>"+row[8][2:]+"</b></font></TD><TD><font color=green><b>"+row[9]+"</b></font></TD><TD>"+dur+"</TD><TD>"+row[4]+"</TD></TR>"
-                                   my_list.append(row[10])
-                                   n += 1
-                               f.write(hline+"\n")
-                            # maximum number of lists in lastheard on the main page 
-                            if n == 15:
-                               break
-                      f.write("</table></fieldset><br>")
-                      f.close()
-                # End of Lastheard
-                # Removing obsolete entries from the sys_list (3 sec)
-                deleteList=[]
-                processNo = 0
-                timeO = datetime.datetime.now().timestamp()
-                for item in sys_list:
-                   td = item[2] - timeO if item[2] > timeO else timeO - item[2]
-                   td = int(round(abs((td)) / 60))
-                   if td > 3:
-                      deleteList.insert(0,processNo)
-                   processNo +=1
-                if len(deleteList) >0:
-                   for item in deleteList:
-                       del sys_list[item]
-            elif p[1] == 'START':
-                log_message = '{} {} {} SYS: {:8.8s} SRC_ID: {:9.9s} TS: {} TGID: {:7.7s} {:17.17s} SUB: {:9.9s}; {:18.18s}'.format(_now[10:19], p[0][6:], p[1], p[3], p[5], p[7],p[8], alias_tgid(int(p[8]),talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids))
-                timeST = datetime.datetime.now().timestamp()
-                sys_list.append([p[3],p[4],timeST])
-            elif p[1] == 'END' and start_sys==0:
-                log_message = '{} {} {}   SYS: {:8.8s} SRC_ID: {:9.9s} TS: {} TGID: {:7.7s} {:17.17s} SUB: {:9.9s}; {:18.18s} Time: {}s '.format(_now[10:19], p[0][6:], p[1], p[3], p[5], p[7],p[8],alias_tgid(int(p[8]),talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids), int(float(p[9])))
-            elif p[1] == 'END WITHOUT MATCHING START':
-                log_message = '{} {} {} on SYSTEM {:8.8s}: SRC_ID: {:9.9s} TS: {} TGID: {:7.7s} {:17.17s} SUB: {:9.9s}; {:18.18s}'.format(_now[10:19], p[0][6:], p[1], p[3], p[5], p[7], p[8],alias_tgid(int(p[8]),talkgroup_ids),p[6], alias_short(int(p[6]), subscriber_ids))
-            else:
-                log_message = '{} UNKNOWN GROUP VOICE LOG MESSAGE'.format(_now[10:19])
+        if p[0] == 'GROUP VOICE':
+            rts_update(p)
+            if p[2] != 'TX' and p[5] not in opbfilter:
+                if p[1] == 'END':
+                    start_sys=0
+                    for x in sys_list:
+                        if x[0]== p[3] and x[1] == p[4]:
+                            sys_list.remove(x)
+                            start_sys=1
+                            break
+                if p[1] == 'END' and start_sys==1:
+                    log_message = f'{_now[10:19]} {p[0][6:]} {p[1]}   SYS: {p[3]:8.8s} SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: {p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s} Time: {int(float(p[9]))}s'
+                    # log only to file if system is NOT OpenBridge event (not logging open bridge system, name depends on your OB definitions) AND transmit time is LONGER as 2sec (make sense for very short transmits)
+                    if LASTHEARD_INC:
+                        # save QSOs to lastheared.log for which transmission duration is longer than 2 sec, 
+                        # use >=0 instead of >2 if you want to record all activities
+                        if int(float(p[9])) > 2: 
+                            log_lh_message = f'{_now},{p[9]},{p[0]},{p[1]},{p[3]},{p[5]},{alias_call(int(p[5]), subscriber_ids)},TS{p[7]},TG{p[8]},{alias_tgid(int(p[8]), talkgroup_ids)},{p[6]},{alias_short(int(p[6]), subscriber_ids)}'
+                            # Delete duplicated entries in lastheard
+                            for item in lastheard:
+                                if p[6] == item[10]:
+                                    lastheard.remove(item)
+                                    break
+                            lastheard.appendleft([_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
+                    # End of Lastheard
+                    # Removing obsolete entries from the sys_list (3 sec)
+                    for item in list(sys_list):
+                        if time() - item[2] >= 3:
+                            sys_list.remove(item)
 
-            dashboard_server.broadcast('l' + log_message, 'all_clients')
-            LOGBUF.append(log_message)
+                elif p[1] == 'START':
+                    log_message = f'{_now[10:19]} {p[0][6:]} {p[1]}   SYS: {p[3]:8.8s} SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: {p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s}'
+                    timeST = time()
+                    sys_list.append([p[3],p[4],timeST])
+                elif p[1] == 'END' and start_sys==0:
+                    log_message = f'{_now[10:19]} {p[0][6:]} {p[1]}   SYS: {p[3]:8.8s} SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: {p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s} Time: {int(float(p[9]))}s'
+                elif p[1] == 'END WITHOUT MATCHING START':
+                    log_message = f'{_now[10:19]} {p[0][6:]} {p[1]} on SYSTEM {p[3]:8.8s}: SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: { p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s}'
+                else:
+                    log_message = f'{_now[10:19]} UNKNOWN GROUP VOICE LOG MESSAGE'
+
+                dashboard_server.broadcast('l' + log_message, 'all_clients')
+                LOGBUF.append(log_message)
+
+        elif p[0] == 'UNIT DATA HEADER' and p[2] != 'TX' and p[5] not in opbfilter:
+            for item in lastheard:
+                if p[6] == item[10]:
+                    lastheard.remove(item)
+                    break
+            lastheard.appendleft([_now, 'DATA', p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
+            print(lastheard)            
 
         else:
-            logging.debug('{} UNKNOWN LOG MESSAGE'.format(_now[10:19]))
-
+            logger.debug(f'{_now[10:19]} UNKNOWN LOG MESSAGE')
+        
     else:
-        logging.debug('got unknown opcode: {}, message: {}'.format(repr(opcode), repr(_message[1:])))
+        logger.debug(f'got unknown opcode: {repr(opcode)}, message: {repr(_message[1:])}')
 
 def load_dictionary(_message):
     data = _message[1:]
     return loads(data)
-    logging.debug('Successfully decoded dictionary')
+    logger.debug('Successfully decoded dictionary')
 
 ######################################################################
 #
@@ -879,16 +885,16 @@ class report(NetstringReceiver):
 
 class reportClientFactory(ReconnectingClientFactory):
     def __init__(self):
-        logging.info('reportClient object for connecting to HBlink.py created at: %s', self)
+        logger.info('reportClient object for connecting to HBlink.py created at: %s', self)
 
     def startedConnecting(self, connector):
-        logging.info('Initiating Connection to Server.')
+        logger.info('Initiating Connection to Server.')
         if 'dashboard_server' in locals() or 'dashboard_server' in globals():
             dashboard_server.broadcast('q' + 'Connection to HBlink Established', 'all_clients')
 
     def buildProtocol(self, addr):
-        logging.info('Connected.')
-        logging.info('Resetting reconnection delay')
+        logger.info('Connected.')
+        logger.info('Resetting reconnection delay')
         self.resetDelay()
         return report()
 
@@ -897,12 +903,12 @@ class reportClientFactory(ReconnectingClientFactory):
         CTABLE['PEERS'].clear()
         CTABLE['OPENBRIDGES'].clear()
         BTABLE['BRIDGES'].clear()
-        logging.info('Lost connection.  Reason: %s', reason)
+        logger.info('Lost connection.  Reason: %s', reason)
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
         dashboard_server.broadcast('q' + 'Connection to HBlink Lost', 'all_clients')
 
     def clientConnectionFailed(self, connector, reason):
-        logging.info('Connection failed. Reason: %s', reason)
+        logger.info('Connection failed. Reason: %s', reason)
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 ######################################################################
@@ -911,27 +917,19 @@ class reportClientFactory(ReconnectingClientFactory):
 #
 
 class dashboard(WebSocketServerProtocol):
-    #global INFO, MONITOR, OPENBRIDGE
-
-    #def __init__(self):
-    #    self.group = None
 
     def onConnect(self, request):
-        logging.info('Client connecting: %s', request.peer)
+        logger.info('Client connecting: %s', request.peer)
 
     def onOpen(self):
-        #if BTABLE['SETUP']['BRIDGES']:
-        #      ddbridges = True
-        #else:
-        #      ddbridges = False
-        logging.info('WebSocket connection open.')
+        logger.info('WebSocket connection open.')
 
     def onMessage(self, payload, isBinary):
         if isBinary:
-            logging.info('Binary message received: %s bytes', len(payload))
+            logger.info('Binary message received: %s bytes', len(payload))
         else:
             msg = payload.decode('utf-8').split(',')
-            logging.info('Text message received: %s', payload)
+            logger.info('Text message received: %s', payload)
             if msg[0] == 'conf':
                 for group in msg[1:]:
                     if group in ('main', 'bridge', 'masters', 'opb', 'peers'):
@@ -946,7 +944,7 @@ class dashboard(WebSocketServerProtocol):
                         elif group == 'opb':
                             self.sendMessage(('o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
                         elif group == 'main':
-                            self.sendMessage(('i' + itemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
+                            self.sendMessage(('i' + itemplate.render(_table=CTABLE, dbridges=BTABLE['SETUP']['BRIDGES'], lastheard=lastheard)).encode('utf-8'))
                         # for _message in LOGBUF:
                         #     if _message:
                         #         _bmessage = ('l' + _message).encode('utf-8')
@@ -957,94 +955,90 @@ class dashboard(WebSocketServerProtocol):
         self.factory.unregister(self)
 
     def onClose(self, wasClean, code, reason):
-        logging.info('WebSocket connection closed: %s', reason)
-        #self.factory.unregister(self)
+        logger.info('WebSocket connection closed: %s', reason)
 
 
 class dashboardFactory(WebSocketServerFactory):
-
+    #global GROUPS
     def __init__(self, url):
         WebSocketServerFactory.__init__(self, url)
-        self.clients = {'all_clients':{}, 'main':{}, 'bridge':{}, 'masters':{}, 'opb':{}, 'peers':{}}
+        self.clients = GROUPS
 
     def register(self, client, group):
         if client not in self.clients[group]:
             self.clients[group][client] = time()
-            logging.info(f'registered client {client.peer} to group {group}')
+            logger.info(f'registered client {client.peer} to group {group}')
         if client not in self.clients['all_clients']:
             self.clients['all_clients'][client] = time()
 
     def unregister(self, client):
-        logging.info(f'unregistered client {client.peer}')
+        logger.info(f'unregistered client {client.peer}')
         for group in self.clients:
             if client in self.clients[group]:
                 del self.clients[group][client]
 
     def broadcast(self, msg, group):
-        logging.debug('broadcasting message to: %s', self.clients[group])
+        logger.debug('broadcasting message to: %s', self.clients[group])
         for client in self.clients[group]:
             client.sendMessage(msg.encode('utf8'))
-            logging.debug('message sent to %s', client.peer)
+            logger.debug('message sent to %s', client.peer)
 
-######################################################################
-#
+#######################################################################
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.INFO,
-        filename = (LOG_PATH + LOG_NAME),
-        filemode='a',
-        format='%(asctime)s %(levelname)s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    console.setFormatter(formatter)
-    logging.getLogger('').addHandler(console)
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('hbmon')
+    logger.setLevel(logging.INFO)
+    # Log handlers
+    fh = logging.FileHandler(LOG_PATH+LOG_NAME, encoding='utf8')
+    fh.setLevel(logging.INFO)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    # Log formatter
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s', '%Y-%m-%d %H:%M:%S')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    # Add handlers
+    logger.addHandler(fh)
+    logger.addHandler(ch)
 
-    logging.info('monitor.py starting up')
+    logger.info('monitor.py starting up')
     logger.info('\n\n\tCopyright (c) 2016, 2017, 2018, 2019\n\tThe Regents of the K0USY Group. All rights reserved.\n\n\tPython 3 port:\n\t2019 Steve Miller, KC1AWV <smiller@kc1awv.net>\n\n\tHBMonitor v2 SP2ONG 2019-2021\n\n')
-    # Check lastheard.log 
-    if os.path.isfile(LOG_PATH+"lastheard.log"):
-      try:
-         check_call("sed -i -e 's|\\x0||g' {}".format(LOG_PATH+"lastheard.log"), shell=True)
-         logging.info('Check lastheard.log file')
-      except CalledProcessError as err:
-         print(err)
+    
     # Download alias files
     for file,url in ((PEER_FILE,PEER_URL),(SUBSCRIBER_FILE,SUBSCRIBER_URL),(TGID_FILE,TGID_URL)):
         result = try_download(PATH, file, url, (FILE_RELOAD * 86400))
-        logging.info(result)
+        logger.info(result)
 
     # Make Alias Dictionaries
     peer_ids = mk_full_id_dict(PATH, PEER_FILE, 'peer')
     if peer_ids:
-        logging.info('ID ALIAS MAPPER: peer_ids dictionary is available')
+        logger.info('ID ALIAS MAPPER: peer_ids dictionary is available')
 
     subscriber_ids = mk_full_id_dict(PATH, SUBSCRIBER_FILE, 'subscriber')
     if subscriber_ids:
-        logging.info('ID ALIAS MAPPER: subscriber_ids dictionary is available')
+        logger.info('ID ALIAS MAPPER: subscriber_ids dictionary is available')
 
     talkgroup_ids = mk_full_id_dict(PATH, TGID_FILE, 'tgid')
     if talkgroup_ids:
-        logging.info('ID ALIAS MAPPER: talkgroup_ids dictionary is available')
+        logger.info('ID ALIAS MAPPER: talkgroup_ids dictionary is available')
 
     local_subscriber_ids = mk_full_id_dict(PATH, LOCAL_SUB_FILE, 'subscriber')
     if local_subscriber_ids:
-        logging.info('ID ALIAS MAPPER: local_subscriber_ids added to subscriber_ids dictionary')
+        logger.info('ID ALIAS MAPPER: local_subscriber_ids added to subscriber_ids dictionary')
         subscriber_ids.update(local_subscriber_ids)
 
     local_talkgroup_ids = mk_full_id_dict(PATH, LOCAL_TGID_FILE, 'tgid')
     if local_talkgroup_ids:
-        logging.info('ID ALIAS MAPPER: local_talkgroup_ids added to talkgroup_ids dictionary')
+        logger.info('ID ALIAS MAPPER: local_talkgroup_ids added to talkgroup_ids dictionary')
         talkgroup_ids.update(local_talkgroup_ids)
 
     local_peer_ids = mk_full_id_dict(PATH, LOCAL_PEER_FILE, 'peer')
     if local_peer_ids:
-        logging.info('ID ALIAS MAPPER: local_peer_ids added peer_ids dictionary')
+        logger.info('ID ALIAS MAPPER: local_peer_ids added peer_ids dictionary')
         peer_ids.update(local_peer_ids)
+
+    # Import entries from log to lastheard
+    lastheard_hdl('get')
 
     # Jinja2 Stuff
     env = Environment(
@@ -1061,16 +1055,25 @@ if __name__ == '__main__':
 
     # Start update loop
     update_stats = task.LoopingCall(build_stats)
-    update_stats.start(FREQUENCY)
+    update_stats.start(FREQUENCY).addErrback(error_hdl)
 
     # Start a timout loop
     if CLIENT_TIMEOUT > 0:
         timeout = task.LoopingCall(timeout_clients)
-        timeout.start(10)
+        timeout.start(10).addErrback(error_hdl)
+
+ # Start update loop
+    lastheard_loop = task.LoopingCall(lastheard_hdl, 'save')
+    lastheard_loop.start(30).addErrback(error_hdl)
 
     # Connect to HBlink
     reactor.connectTCP(HBLINK_IP, HBLINK_PORT, reportClientFactory())
-    
+
+    # def print_tables():
+    #     print(lastheard)
+    #     # for _dict in (CONFIG, BRIDGES):
+    #     #     print(f'dictionario:\n{_dict}')
+    # reactor.callLater(120, print_tables)
 
     # HBmonitor does not require the use of SSL as no "sensitive data" is sent to it but if you want to use SSL:
     # create websocket server to push content to clients via SSL https://
