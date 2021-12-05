@@ -13,6 +13,7 @@ window.onload = function() {
   masters_table = document.getElementById('masters');
   opb_table = document.getElementById('opb');
   peers_table = document.getElementById('peers');
+  statictg_table = document.getElementById('statictg');
 
   wsuri = (((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.hostname + ":9000");
 
@@ -42,6 +43,7 @@ window.onload = function() {
       masters_table.innerHTML = "";
       opb_table.innerHTML = "";
       peers_table.innerHTML = "";
+      statictg_table.innerHTML = "";
     }
 
     sock.onmessage = function(e) {
@@ -50,13 +52,15 @@ window.onload = function() {
       if (opcode == "b") {
         Bmsg(message);
       } else if (opcode == "c") {
-          Cmsg(message);                   
+        Cmsg(message);                   
       } else if (opcode == "i") {
-          Imsg(message);         
+        Imsg(message);         
       } else if (opcode == "o") {
-          Omsg(message);         
+        Omsg(message);         
       } else if (opcode == "p") {
-         Pmsg(message);         
+        Pmsg(message);
+      } else if (opcode == "s") {
+        Smsg(message);
       } else if (opcode == "l") {
           if (ellog != null) { 
             log(message);}
@@ -88,14 +92,15 @@ function Cmsg(_msg) {masters_table.innerHTML = _msg;};
 function Imsg(_msg) {main_table.innerHTML = _msg;};
 function Omsg(_msg) {opb_table.innerHTML = _msg;};
 function Pmsg(_msg) {peers_table.innerHTML = _msg;};
+function Smsg(_msg) {statictg_table.innerHTML = _msg;};
 
 function log(_msg) {
   ellog.innerHTML += _msg + '\n';
   ellog.scrollTop = ellog.scrollHeight;};
 
-// Find what tables are present
+// Find tables that are present
 function conf_id() {
-  const groups = ["main", "bridge", "masters", "opb", "peers"];
+  const groups = ["main", "bridge", "masters", "opb", "peers", "statictg"];
   var tags = document.getElementsByTagName("p");
   for (i = 0; i < tags.length; i++) {
     if ( groups.includes(tags[i].id) ) {
