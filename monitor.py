@@ -29,7 +29,8 @@
 
 # Standard modules
 import logging
-from os import write
+from pathlib import Path
+import sys
 
 # Twisted modules
 from twisted.internet.protocol import ReconnectingClientFactory, Protocol
@@ -82,7 +83,7 @@ BRIDGES_RX  = ''
 CONFIG_RX   = ''
 LOGBUF      = deque(100*[''], 100)
 lastheard   = deque(maxlen = LASTHEARD_ROWS)
-GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'masters': {}, 'opb': {}, 'peers': {}}
+GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'masters': {}, 'opb': {}, 'peers': {}, 'statictg':{}}
 
 RED         = 'ff6600'
 BLACK       = '000000'
@@ -125,7 +126,7 @@ def get_template(_file):
 def mk_full_id_dict(_path, _file, _type):
     _dict = {}
     try:
-        with open(_path+_file, 'r', encoding='utf8') as _handle:
+        with Path(_path,_file).open('r', encoding='utf8') as _handle:
             if _file.split('.')[1] == 'csv':
                 if _type == 'subscriber':
                     fields = SUB_FIELDS
@@ -241,47 +242,37 @@ def alias_tgid(_id, _dict):
         return str(" ")
 
 # Return friendly elapsed time from time in seconds.
-def since(_time):
+def time_str(_time, param):
     now = int(time())
-    _time = now - int(_time)
+    if param == 'since':
+        _time = now - int(_time)
+    elif param == 'to':
+        _time = int(_time) - now
     seconds = _time % 60
     minutes = int(_time/60) % 60
     hours = int(_time/60/60) % 24
     days = int(_time/60/60/24)
     if days:
-        return '{}d {}h'.format(days, hours)
+        return f'{days}d {hours}h'
     elif hours:
-        return '{}h {}m'.format(hours, minutes)
+        return f'{hours}h {minutes}m'
     elif minutes:
-        return '{}m {}s'.format(minutes, seconds)
+        return f'{minutes}m {seconds}s'
     else:
-        return '{}s'.format(seconds)
-
+        return f'{seconds}s'
+ 
 
 def lastheard_hdl(p):
     if p == 'get':
-        if isfile('lastheard.pkl'):
-            with open('lastheard.pkl', 'rb') as fh:
-                temp_pkl = pkl_load(fh)
-            for item in reversed(temp_pkl):
-                lastheard.appendleft(item)
-            logger.info(f'{len(lastheard)} entries imported from lastheard.pkl')
-
-        else:
-            temp_id = []
-            count = 0
-            with open(LOG_PATH+LOG_NAME, 'r', encoding='utf8' ) as logfile:
-                temp_q = deque(csv_reader(logfile), 200)
-                for row in reversed(temp_q):
-                    if len(row) < 10 or row[1] != 'END' or row[2] != 'RX' or float(row[9]) < 1: continue
-                    if row[6] not in temp_id:
-                        temp_id.append(row[6])
-                        date = row[0][:19]
-                        lastheard.append([date, row[9], row[0][39:50], row[1], row[3], row[5], alias_call(int(row[5]), subscriber_ids),
-                                row[7], row[8], alias_tgid(int(row[8]), talkgroup_ids), row[6], alias_short(int(row[6]), subscriber_ids).split(',')])
-                        count += 1
-                        if count >= LASTHEARD_ROWS: break
-            logger.info(f'{count} entries imported from log file.')
+        try:
+            if isfile('lastheard.pkl'):
+                with open('lastheard.pkl', 'rb') as fh:
+                    temp_pkl = pkl_load(fh)
+                for item in reversed(temp_pkl):
+                    lastheard.appendleft(item)
+                logger.info(f'{len(lastheard)} entries imported from lastheard.pkl')
+        except Exception as err:
+            logger.warning(err)
 
     elif p == 'save':
         with open('lastheard.pkl', 'wb') as fh:
@@ -295,10 +286,10 @@ def error_hdl(failure):
     #reactor.stop()
 
 
-def cleanTE():
 ##################################################
 # Cleaning entries in tables - Timeout (5 min) 
 #
+def cleanTE():
     timeout = time()
     for system in CTABLE['MASTERS']:
         for peer in CTABLE['MASTERS'][system]['PEERS']:
@@ -406,11 +397,10 @@ def add_hb_peer(_peer_conf, _ctable_loc, _peer):
        _ctable_peer['COLORCODE'] = _peer_conf['COLORCODE']
     
     _ctable_peer['CONNECTION'] = _peer_conf['CONNECTION']
-    _ctable_peer['CONNECTED'] = since(_peer_conf['CONNECTED'])
+    _ctable_peer['CONNECTED'] = time_str(_peer_conf['CONNECTED'], 'since')
     
     _ctable_peer['IP'] = _peer_conf['IP']
     _ctable_peer['PORT'] = _peer_conf['PORT']
-    
     #_ctable_peer['LAST_PING'] = _peer_conf['LAST_PING']
 
     # SLOT 1&2 - for real-time montior: make the structure for later use
@@ -424,11 +414,11 @@ def add_hb_peer(_peer_conf, _ctable_loc, _peer):
         _ctable_peer[ts]['SRC'] = ''
         _ctable_peer[ts]['DEST'] = ''
 
+
 ######################################################################
 #
 # Build the HBlink connections table
 #
-
 def build_hblink_table(_config, _stats_table):
     for _hbp, _hbp_data in list(_config.items()):
         if _hbp_data['ENABLED'] == True:
@@ -476,7 +466,7 @@ def build_hblink_table(_config, _stats_table):
                 if _stats_table['PEERS'][_hbp]['MODE'] == 'XLXPEER': 
                     _stats_table['PEERS'][_hbp]['STATS']['CONNECTION'] = _hbp_data['XLXSTATS']['CONNECTION']
                     if _hbp_data['XLXSTATS']['CONNECTION'] == "YES":
-                        _stats_table['PEERS'][_hbp]['STATS']['CONNECTED'] = since(_hbp_data['XLXSTATS']['CONNECTED'])
+                        _stats_table['PEERS'][_hbp]['STATS']['CONNECTED'] = time_str(_hbp_data['XLXSTATS']['CONNECTED'],'since')
                         _stats_table['PEERS'][_hbp]['STATS']['PINGS_SENT'] = _hbp_data['XLXSTATS']['PINGS_SENT']
                         _stats_table['PEERS'][_hbp]['STATS']['PINGS_ACKD'] = _hbp_data['XLXSTATS']['PINGS_ACKD']
                     else:
@@ -486,7 +476,7 @@ def build_hblink_table(_config, _stats_table):
                 else:
                     _stats_table['PEERS'][_hbp]['STATS']['CONNECTION'] = _hbp_data['STATS']['CONNECTION']
                     if _hbp_data['STATS']['CONNECTION'] == "YES":
-                        _stats_table['PEERS'][_hbp]['STATS']['CONNECTED'] = since(_hbp_data['STATS']['CONNECTED'])
+                        _stats_table['PEERS'][_hbp]['STATS']['CONNECTED'] = time_str(_hbp_data['STATS']['CONNECTED'], 'since')
                         _stats_table['PEERS'][_hbp]['STATS']['PINGS_SENT'] = _hbp_data['STATS']['PINGS_SENT']
                         _stats_table['PEERS'][_hbp]['STATS']['PINGS_ACKD'] = _hbp_data['STATS']['PINGS_ACKD']
                     else:
@@ -513,7 +503,6 @@ def build_hblink_table(_config, _stats_table):
                     _stats_table['PEERS'][_hbp][ts]['SRC'] = ''
                     _stats_table['PEERS'][_hbp][ts]['DEST'] = ''
 
-
             # Process OpenBridge systems
             elif _hbp_data['MODE'] == 'OPENBRIDGE':
                 _stats_table['OPENBRIDGES'][_hbp] = {}
@@ -521,8 +510,8 @@ def build_hblink_table(_config, _stats_table):
                 _stats_table['OPENBRIDGES'][_hbp]['TARGET_IP'] = _hbp_data['TARGET_IP']
                 _stats_table['OPENBRIDGES'][_hbp]['TARGET_PORT'] = _hbp_data['TARGET_PORT']
                 _stats_table['OPENBRIDGES'][_hbp]['STREAMS'] = {}
-
     #return(_stats_table)
+
 
 def update_hblink_table(_config, _stats_table):
     # Is there a system in HBlink's config monitor doesn't know about?
@@ -544,17 +533,16 @@ def update_hblink_table(_config, _stats_table):
             for _peer in remove_list:
                 logger.info('Deleting stats peer not in hblink config: %s', _peer)
                 del (_stats_table['MASTERS'][_hbp]['PEERS'][_peer])
-
     # Update connection time
     for _hbp in _stats_table['MASTERS']:
         for _peer in _stats_table['MASTERS'][_hbp]['PEERS']:
             if bytes_4(_peer) in _config[_hbp]['PEERS']:
-                _stats_table['MASTERS'][_hbp]['PEERS'][_peer]['CONNECTED'] = since(_config[_hbp]['PEERS'][bytes_4(_peer)]['CONNECTED'])
+                _stats_table['MASTERS'][_hbp]['PEERS'][_peer]['CONNECTED'] = time_str(_config[_hbp]['PEERS'][bytes_4(_peer)]['CONNECTED'],'since')
 
     for _hbp in _stats_table['PEERS']:
         if _stats_table['PEERS'][_hbp]['MODE'] == 'XLXPEER':
             if _config[_hbp]['XLXSTATS']['CONNECTION'] == "YES":
-                _stats_table['PEERS'][_hbp]['STATS']['CONNECTED'] = since(_config[_hbp]['XLXSTATS']['CONNECTED'])
+                _stats_table['PEERS'][_hbp]['STATS']['CONNECTED'] = time_str(_config[_hbp]['XLXSTATS']['CONNECTED'],'since')
                 _stats_table['PEERS'][_hbp]['STATS']['CONNECTION'] = _config[_hbp]['XLXSTATS']['CONNECTION']
                 _stats_table['PEERS'][_hbp]['STATS']['PINGS_SENT'] = _config[_hbp]['XLXSTATS']['PINGS_SENT']
                 _stats_table['PEERS'][_hbp]['STATS']['PINGS_ACKD'] = _config[_hbp]['XLXSTATS']['PINGS_ACKD']
@@ -565,7 +553,7 @@ def update_hblink_table(_config, _stats_table):
                 _stats_table['PEERS'][_hbp]['STATS']['PINGS_ACKD'] = 0
         else:
             if _config[_hbp]['STATS']['CONNECTION'] == "YES":
-                _stats_table['PEERS'][_hbp]['STATS']['CONNECTED'] = since(_config[_hbp]['STATS']['CONNECTED'])
+                _stats_table['PEERS'][_hbp]['STATS']['CONNECTED'] = time_str(_config[_hbp]['STATS']['CONNECTED'],'since')
                 _stats_table['PEERS'][_hbp]['STATS']['CONNECTION'] = _config[_hbp]['STATS']['CONNECTION']
                 _stats_table['PEERS'][_hbp]['STATS']['PINGS_SENT'] = _config[_hbp]['STATS']['PINGS_SENT']
                 _stats_table['PEERS'][_hbp]['STATS']['PINGS_ACKD'] = _config[_hbp]['STATS']['PINGS_ACKD']
@@ -574,15 +562,14 @@ def update_hblink_table(_config, _stats_table):
                 _stats_table['PEERS'][_hbp]['STATS']['CONNECTION'] = _config[_hbp]['STATS']['CONNECTION']
                 _stats_table['PEERS'][_hbp]['STATS']['PINGS_SENT'] = 0
                 _stats_table['PEERS'][_hbp]['STATS']['PINGS_ACKD'] = 0
-    
     cleanTE()
     build_stats()
+
 
 ######################################################################
 #
 # CONFBRIDGE TABLE FUNCTIONS
 #
-
 def build_bridge_table(_bridges):
     _stats_table = {}
     _now = time()
@@ -629,12 +616,12 @@ def build_bridge_table(_bridges):
             _stats_table[_bridge][system['SYSTEM']]['TRIG_OFF'] = ', '.join(system['OFF'])
     return _stats_table
 
+
 ######################################################################
 #
 # BUILD HBlink AND CONFBRIDGE TABLES FROM CONFIG/BRIDGES DICTS
 #          THIS CURRENTLY IS A TIMED CALL
 #
-
 build_time = 0
 def build_stats():
     global build_time
@@ -652,13 +639,64 @@ def build_stats():
                 masters = 'c' + ctemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'],emaster=EMPTY_MASTERS)
                 dashboard_server.broadcast(masters, 'masters')
             if 'opb' in active_groups: 
-                opb = 'o'+ otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
+                opb = 'o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
                 dashboard_server.broadcast(opb, 'opb')
+            if 'statictg' in active_groups:
+                statictg = 's' + stemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)
+                dashboard_server.broadcast(statictg, 'statictg')
         if BRIDGES and BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
             if 'bridge' in active_groups:
                 bridges = 'b' + btemplate.render(_table=BTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
                 dashboard_server.broadcast(bridges, 'bridge')
         build_time = time()
+
+
+def build_tgstats():
+    if CONFIG and CTABLE:
+        CTABLE['SERVER'] ={'TS1':[],'TS2':[]}
+        tmp_dict = {}
+        srv_info = 0
+        # make a list with occupied systems
+        for system in CTABLE['MASTERS']:
+            if not CTABLE['MASTERS'][system]['PEERS']:continue
+            for peer in CTABLE['MASTERS'][system]['PEERS']:
+                if peer == 4294967295: continue
+                if system not in tmp_dict:
+                    tmp_dict[system] = [peer]
+                else:
+                    tmp_dict[system].append(peer)
+
+        # Get the static TG of the server
+        for system in CONFIG:
+            if system not in tmp_dict: continue
+            if not srv_info:
+                CTABLE['SERVER']['SINGLE_MODE'] = CONFIG[system]['SINGLE_MODE']
+                for item in CONFIG[system]['_default_options'].split(';')[:2]:
+                    if len(item) > 11 and item[:11] == 'TS1_STATIC=':
+                        CTABLE['SERVER']['TS1'] = item[11:].split(',')
+                    if len(item) > 11 and item[:11] == 'TS2_STATIC=':
+                        CTABLE['SERVER']['TS2'] = item[11:].split(',')
+                srv_info = 1
+            for peer in CTABLE['MASTERS'][system]['PEERS']:
+                CTABLE['MASTERS'][system]['PEERS'][peer]['SINGLE_TS1'] = {'TGID':'', 'TO':''}
+                CTABLE['MASTERS'][system]['PEERS'][peer]['SINGLE_TS2'] = {'TGID':'', 'TO':''}
+                if isinstance(CONFIG[system]['TS1_STATIC'], bool):
+                    CTABLE['MASTERS'][system]['PEERS'][peer]['TS1_STATIC'] = []
+                else:
+                    CTABLE['MASTERS'][system]['PEERS'][peer]['TS1_STATIC'] = CONFIG[system]['TS1_STATIC'].split(',')
+                if isinstance(CONFIG[system]['TS2_STATIC'], bool):
+                   CTABLE['MASTERS'][system]['PEERS'][peer]['TS2_STATIC'] = []
+                else:
+                    CTABLE['MASTERS'][system]['PEERS'][peer]['TS2_STATIC'] = CONFIG[system]['TS2_STATIC'].split(',')
+    # Find Single TG
+    if CTABLE and BRIDGES and tmp_dict:
+        for bridge in BRIDGES:
+            for system in BRIDGES[bridge]:
+                if system['ACTIVE'] == False or system['SYSTEM'][:3] == 'OBP' or system['TO_TYPE'] == 'OFF': continue
+                if system['SYSTEM'] not in tmp_dict: continue
+                for peer in CTABLE['MASTERS'][system['SYSTEM']]['PEERS']:
+
+                    CTABLE['MASTERS'][system['SYSTEM']]['PEERS'][peer]['SINGLE_TS'+str(system['TS'])] = {'TGID': int_id(system['TGID']), 'TO': time_str(system['TIMER'],'to')}
 
 
 def timeout_clients():
@@ -705,11 +743,11 @@ def rts_update(p):
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['COLOR'] = color
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['BGCOLOR'] = bgcolor
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TYPE'] = callType
-                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['SUB'] = '{} ({})'.format(alias_short(sourceSub, subscriber_ids), sourceSub)
-                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['CALL'] = '{}'.format(alias_call(sourceSub, subscriber_ids))
+                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['SUB'] = f'{alias_short(sourceSub, subscriber_ids)} ({sourceSub})'
+                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['CALL'] = f'{alias_call(sourceSub, subscriber_ids)}'
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['SRC'] = peer
-                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['DEST'] = 'TG {}&nbsp;&nbsp;&nbsp;&nbsp;{}'.format(destination,alias_tgid(destination,talkgroup_ids))    
-                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TG'] = 'TG&nbsp;{}'.format(destination)    
+                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['DEST'] = f'TG {destination}&nbsp;&nbsp;&nbsp;&nbsp;{alias_tgid(destination,talkgroup_ids)}'
+                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TG'] = f'TG&nbsp;{destination}'
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TRX'] = crxstatus
             if action == 'END':
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TS'] = False
@@ -725,7 +763,7 @@ def rts_update(p):
 
     if system in CTABLE['OPENBRIDGES']:
         if action == 'START':
-            CTABLE['OPENBRIDGES'][system]['STREAMS'][streamId] = (trx, alias_call(sourceSub, subscriber_ids),'{}'.format(destination),timeout)
+            CTABLE['OPENBRIDGES'][system]['STREAMS'][streamId] = (trx, alias_call(sourceSub, subscriber_ids),f'{destination}',timeout)
         if action == 'END':
             if streamId in CTABLE['OPENBRIDGES'][system]['STREAMS']:
                 del CTABLE['OPENBRIDGES'][system]['STREAMS'][streamId]
@@ -746,11 +784,11 @@ def rts_update(p):
             CTABLE['PEERS'][system][timeSlot]['TS'] = True
             CTABLE['PEERS'][system][timeSlot]['COLOR'] = color
             CTABLE['PEERS'][system][timeSlot]['BGCOLOR'] = bgcolor
-            CTABLE['PEERS'][system][timeSlot]['SUB'] = '{} ({})'.format(alias_short(sourceSub, subscriber_ids), sourceSub)
-            CTABLE['PEERS'][system][timeSlot]['CALL'] = '{}'.format(alias_call(sourceSub, subscriber_ids))
+            CTABLE['PEERS'][system][timeSlot]['SUB']= f'{alias_short(sourceSub, subscriber_ids)} ({sourceSub})'
+            CTABLE['PEERS'][system][timeSlot]['CALL'] = f'{alias_call(sourceSub, subscriber_ids)}'
             CTABLE['PEERS'][system][timeSlot]['SRC'] = sourcePeer
-            CTABLE['PEERS'][system][timeSlot]['DEST'] = 'TG {}&nbsp;&nbsp;&nbsp;&nbsp;{}'.format(destination,alias_tgid(destination,talkgroup_ids))
-            CTABLE['PEERS'][system][timeSlot]['TG'] = 'TG&nbsp;{}'.format(destination)
+            CTABLE['PEERS'][system][timeSlot]['DEST']= f'TG {destination}&nbsp;&nbsp;&nbsp;&nbsp;{alias_tgid(destination,talkgroup_ids)}'
+            CTABLE['PEERS'][system][timeSlot]['TG']= f'TG&nbsp;{destination}'
             CTABLE['PEERS'][system][timeSlot]['TRX'] = prxstatus
         if action == 'END':
             CTABLE['PEERS'][system][timeSlot]['TS'] = False
@@ -793,9 +831,10 @@ def process_message(_bmessage):
         BRIDGES_RX = strftime('%Y-%m-%d %H:%M:%S', localtime(time()))
         if BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
            BTABLE['BRIDGES'] = build_bridge_table(BRIDGES)
+        build_tgstats()
 
     elif opcode == OPCODE['LINK_EVENT']:
-        logger.info('LINK_EVENT Received: {}'.format(repr(_message[1:])))
+        logger.info(f'LINK_EVENT Received: {_message[1:]}')
 
     elif opcode == OPCODE['BRDG_EVENT']:
         logger.info(f'BRIDGE EVENT: {_message[1:]}')
@@ -851,18 +890,18 @@ def process_message(_bmessage):
                     lastheard.remove(item)
                     break
             lastheard.appendleft([_now, 'DATA', p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
-            print(lastheard)            
 
         else:
-            logger.debug(f'{_now[10:19]} UNKNOWN LOG MESSAGE')
-        
+            logger.warning(f'{_now[10:19]} UNKNOWN LOG MESSAGE')      
     else:
-        logger.debug(f'got unknown opcode: {repr(opcode)}, message: {repr(_message[1:])}')
+        logger.warning(f'got unknown opcode: {repr(opcode)}, message: {_message}')
+
 
 def load_dictionary(_message):
     data = _message[1:]
-    return loads(data)
     logger.debug('Successfully decoded dictionary')
+    return loads(data)
+    
 
 ######################################################################
 #
@@ -932,7 +971,7 @@ class dashboard(WebSocketServerProtocol):
             logger.info('Text message received: %s', payload)
             if msg[0] == 'conf':
                 for group in msg[1:]:
-                    if group in ('main', 'bridge', 'masters', 'opb', 'peers'):
+                    if group in ('main', 'bridge', 'masters', 'opb', 'peers', 'statictg'):
                         self.factory.register(self, group)
                         if group == 'bridge':
                             if BRIDGES and BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
@@ -945,6 +984,8 @@ class dashboard(WebSocketServerProtocol):
                             self.sendMessage(('o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
                         elif group == 'main':
                             self.sendMessage(('i' + itemplate.render(_table=CTABLE, dbridges=BTABLE['SETUP']['BRIDGES'], lastheard=lastheard)).encode('utf-8'))
+                        elif group == 'statictg':
+                            self.sendMessage(('s' + stemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)).encode('utf-8'))
                         # for _message in LOGBUF:
                         #     if _message:
                         #         _bmessage = ('l' + _message).encode('utf-8')
@@ -959,7 +1000,6 @@ class dashboard(WebSocketServerProtocol):
 
 
 class dashboardFactory(WebSocketServerFactory):
-    #global GROUPS
     def __init__(self, url):
         WebSocketServerFactory.__init__(self, url)
         self.clients = GROUPS
@@ -984,12 +1024,11 @@ class dashboardFactory(WebSocketServerFactory):
             logger.debug('message sent to %s', client.peer)
 
 #######################################################################
-
 if __name__ == '__main__':
     logger = logging.getLogger('hbmon')
     logger.setLevel(logging.INFO)
     # Log handlers
-    fh = logging.FileHandler(LOG_PATH+LOG_NAME, encoding='utf8')
+    fh = logging.FileHandler(Path(LOG_PATH,LOG_NAME), encoding='utf8')
     fh.setLevel(logging.INFO)
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
@@ -1052,6 +1091,7 @@ if __name__ == '__main__':
     ctemplate = env.get_template('masters_table.html')
     otemplate = env.get_template('opb_table.html')
     btemplate = env.get_template('bridge_table.html')
+    stemplate = env.get_template('statictg_table.html')
 
     # Start update loop
     update_stats = task.LoopingCall(build_stats)
@@ -1062,18 +1102,18 @@ if __name__ == '__main__':
         timeout = task.LoopingCall(timeout_clients)
         timeout.start(10).addErrback(error_hdl)
 
- # Start update loop
+    # Start update loop
     lastheard_loop = task.LoopingCall(lastheard_hdl, 'save')
     lastheard_loop.start(30).addErrback(error_hdl)
 
     # Connect to HBlink
     reactor.connectTCP(HBLINK_IP, HBLINK_PORT, reportClientFactory())
 
-    # def print_tables():
-    #     print(lastheard)
-    #     # for _dict in (CONFIG, BRIDGES):
-    #     #     print(f'dictionario:\n{_dict}')
-    # reactor.callLater(120, print_tables)
+    def print_tables():
+        print(CTABLE)
+        # for _dict in (CONFIG, BRIDGES):
+        #     print(f'dictionario:\n{_dict}')
+    reactor.callLater(120, print_tables)
 
     # HBmonitor does not require the use of SSL as no "sensitive data" is sent to it but if you want to use SSL:
     # create websocket server to push content to clients via SSL https://
