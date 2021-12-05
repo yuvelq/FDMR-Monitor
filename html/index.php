@@ -6,7 +6,7 @@ include_once 'include/config.php';
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>FreeDMR Monitor - STATUS</title>
+    <title>FDMR Monitor - STATUS</title>
     <script type="text/javascript" src="scripts/hbmon.js"></script>
     <link rel="stylesheet" type="text/css" href="css/styles.php">
     <meta name="description" content="Copyright (c) 2016-21.The Regents of the K0USY Group. All rights reserved. Version OA4DOA 2021 (v202111)">

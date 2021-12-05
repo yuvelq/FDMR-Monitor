@@ -7,7 +7,7 @@ include_once 'include/config.php';
   <head>
     <meta charset="UTF-8">
     <meta http-equiv="refresh" content="300">
-    <title>FreeDMR Monitor - System Info</title>
+    <title>FDMR Monitor - System Info</title>
     <script type="text/javascript" src="scripts/hbmon.js"></script>
     <link rel="stylesheet" type="text/css" href="css/styles.php">
     <style>
