@@ -1,0 +1,40 @@
+{% if _table|length > 0 %}
+<fieldset class="big">
+  <legend><b>&nbsp;.: Lastheard Log :.&nbsp;</b></legend>
+  <table class="log">
+    <tr>
+      <th>Date</th>
+      <th>Time</th>
+      <th>Callsign (DMR-Id)</th>
+      <th>Name</th>
+      <th>TG#</th>
+      <th>TG Name</th>
+      <th>TX (s)</th>
+      <th>System</th>
+    </tr>
+    {% for itm in _table %}
+    <tr>
+      <td>{{ itm[0][:10] }}</td>
+      <td>{{ itm[0][11:16] }}</td>
+      {% if itm[11]|length == 1 or itm[11][0] == 'N0CALL' or itm[11][0] == 'NOCALL' %}
+      <td class="txt-464646"><b>{{ itm[11][0] }}</b></td>
+      <td></td>
+      {% else %}
+      <td><a target="_blank" href=https://qrz.com/db/{{itm[11][0]}}>{{ itm[11][0] }}</a></b><span class="fnt-7pt">&nbsp;({{ itm[10] }})</span></td>
+      <td class="txt-002d62"><b>{{ itm[11][1] }}</b></td>
+      {% endif %}
+      <td class="txt-b5651d"><b>{{ itm[8] }}</b></td>
+      <td class="txt-green"><b>{{ itm[9] }}</b></td>
+      <td {{ 'class="bkgnd-1d1"' |safe if itm[1]=='DATA' else None }}>{{ 'DATA' if itm[1] == 'DATA' else itm[1]|int }}</td>
+      <td>{{ itm[4] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</fieldset><br>
+{% else %}
+<fieldset class="big">
+  <table class="w4data">
+    <tr><td><b>Waiting for data from the Server...</b></td></tr>
+  </table>
+</fieldset><br>
+{% endif %}

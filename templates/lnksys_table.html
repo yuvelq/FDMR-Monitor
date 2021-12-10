@@ -1,0 +1,101 @@
+<fieldset class="big">
+  <legend><b>&nbsp;.: Masters status :.&nbsp;</b></legend>
+{% if _table['MASTERS']|length >0 %}
+  <table class="lnksys">
+    <tr class="theme_color">
+      <th class="th1wd">HB Protocol<br>Master Systems</th>
+      <th class="th2wd">Callsign (DMR Id)<br>Info</th>
+      <th class="th3wd">Time Connected</th>
+      <th class="th4wd">Slot</th>
+      <th class="th5wd">Source</th>
+      <th class="th6wd">Destination</th>
+    </tr>
+
+  {% for _master in _table['MASTERS'] %}    
+    {% if ((_table['MASTERS'][_master]['PEERS']|length==0 or _table['MASTERS'][_master]['PEERS']|length>0) and emaster==True) or (_table['MASTERS'][_master]['PEERS']|length>0 and emaster==False) %}
+
+    <tr>
+      <td rowspan="{{ (_table['MASTERS'][_master]['PEERS']|length * 2) +1 }}"><b>{{_master}}<br><div class="fnt-8pt">{{_table['MASTERS'][_master]['REPEAT']}}</div></b></td>
+    </tr>
+    {% for _client, _cdata in _table['MASTERS'][_master]['PEERS'].items() %}
+    <tr>
+      <td rowspan="2">
+        <div class="tooltip">
+          <span class="txt-0065ff"><b>{{ _cdata['CALLSIGN']}}</b></span><span class="fnt-8pt"> (Id: {{ _client }})</span>
+          <div class="tooltiptext c2s-pos1">
+            {% if _cdata['RX_FREQ'] == 'N/A' and _cdata['TX_FREQ'] == 'N/A' %}
+            <b>Type: <span class="txt-yellow">IP Network</span></b><br>
+            {% else %} 
+            <b>Type: <span class="txt-yellow">Radio</span></b> ({{ _cdata['SLOTS'] }})<br>
+            {% endif %}
+            <b>Soft_Ver</b>: {{_cdata['SOFTWARE_ID'] }}<br>
+            <b>Hardware</b>: {{_cdata['PACKAGE_ID'] }}
+          </div>
+        </div>
+        <br><div class="location">{{_cdata['LOCATION']}}</div>
+      </td>
+      <td class="connted-bkgnd" rowspan="2">{{ _cdata['CONNECTED'] }}</td>
+      <td class="{{ _cdata[1]['TRX'] if _cdata[1]['TRX'] else 'txt-b70101' }}">TS1</td>
+      <td class="{{ _cdata[1]['TRX'] if _cdata[1]['TRX'] else '' }}">{{ _cdata[1]['SUB']|safe }}</td>
+      <td class="{{ _cdata[1]['TRX'] if _cdata[1]['TRX'] else '' }}">{{ _cdata[1]['DEST']|safe }}</td>
+      <tr>
+        <td class="{{ _cdata[2]['TRX'] if _cdata[2]['TRX'] else 'txt-3a4aa6' }}">TS2</td>
+        <td class="{{ _cdata[2]['TRX'] if _cdata[2]['TRX'] else '' }}">{{ _cdata[2]['SUB']|safe }}</td>
+        <td class="{{ _cdata[2]['TRX'] if _cdata[2]['TRX'] else '' }}">{{ _cdata[2]['DEST']|safe }}</td>
+      </tr>
+    </tr>    
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+  </table>
+{% else %}
+  <table class="w4data">
+    <tr><td ><b>Waiting for data from the Server...</b></td></tr>
+  </table>
+{% endif %}
+</fieldset><br>
+
+<fieldset class="big">
+  <legend><b>&nbsp;.: Peers status :.&nbsp;</b></legend>
+  {% if _table['PEERS']|length >0 %}
+  <table class="lnksys">
+    <tr class="theme_color">
+      <th class="th1wd">HB Protocol<br>Peer Systems</th>
+      <th class="th2wd">Callsign (DMR Id)<br>Info</th>
+      <th class="th3wd">Connected<br>TX/RX/Lost</th>
+      <th class="th4wd">Slot</th>
+      <th class="th5wd">Source</th>
+      <th class="th6wd">Destination</th>
+    </tr>
+    {% for _peer, _pdata in _table['PEERS'].items() %}
+    <tr>
+      <td rowspan="2">
+        <span><b>{{ _peer}}</b></span><br>
+        <span class="fnt-7pt">Mode: {{ _table['PEERS'][_peer]['MODE'] }}</span>
+      </td>
+      <td rowspan="2">
+        <div class="tooltip">
+          <span class="txt-0065ff"><b>{{_table['PEERS'][_peer]['CALLSIGN']}}</b></span>
+          <span class="fnt-8pt"> (Id: {{ _table['PEERS'][_peer]['RADIO_ID']}})</span>
+          <span class="tooltiptext c2s-pos2"><b>Time Slot: <span class="txt-yellow">{{ _table['PEERS'][_peer]['SLOTS'] }}</span></b></span>
+        </div><br>
+        <div class="location">{{_table['PEERS'][_peer]['LOCATION']}}</div>
+      </td>
+      <td rowspan="2" 
+        class="{{ 'peer-conn' if _table['PEERS'][_peer]['STATS']['CONNECTION'] == 'YES' else 'peer-disc' }}">
+        {{ _table['PEERS'][_peer]['STATS']['CONNECTED'] }}<br>
+        <div class="fnt-8pt">{{ _table['PEERS'][_peer]['STATS']['PINGS_SENT'] }} / {{ _table['PEERS'][_peer]['STATS']['PINGS_ACKD'] }} / {{ _table['PEERS'][_peer]['STATS']['PINGS_SENT'] - _table['PEERS'][_peer]['STATS']['PINGS_ACKD'] }}</div>
+      </td>
+      <td class="{{ _pdata[1]['TRX'] if _pdata[1]['TRX'] else 'txt-b70101' }}">TS1</td>
+      <td class="{{ _pdata[1]['TRX'] if _pdata[1]['TRX'] else '' }}">{{ _pdata[1]['SUB']|safe }}</td>
+      <td class="{{ _pdata[1]['TRX'] if _pdata[1]['TRX'] else 'txt-b70101' }}">{{ _pdata[1]['DEST']|safe }}</td>
+      <tr>
+        <td class="{{ _pdata[2]['TRX'] if _pdata[2]['TRX'] else 'txt-3a4aa6' }}">TS2</td>
+        <td class="{{ _pdata[2]['TRX'] if _pdata[2]['TRX'] else '' }}">{{ _pdata[2]['SUB']|safe }}</td>
+        <td class="{{ _pdata[2]['TRX'] if _pdata[2]['TRX'] else '' }}">{{ _pdata[2]['DEST']|safe }}</td>
+      </tr>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</fieldset>
