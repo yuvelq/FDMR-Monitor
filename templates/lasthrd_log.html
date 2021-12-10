@@ -1,6 +1,6 @@
-{% if _table|length > 0 %}
 <fieldset class="big">
   <legend><b>&nbsp;.: Lastheard Log :.&nbsp;</b></legend>
+{% if _table|length > 0 %}
   <table class="log">
     <tr>
       <th>Date</th>
@@ -30,11 +30,9 @@
     </tr>
     {% endfor %}
   </table>
-</fieldset><br>
 {% else %}
-<fieldset class="big">
   <table class="w4data">
     <tr><td><b>Waiting for data from the Server...</b></td></tr>
   </table>
-</fieldset><br>
 {% endif %}
+</fieldset>
