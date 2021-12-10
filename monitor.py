@@ -78,22 +78,14 @@ CONFIG      = {}
 CTABLE      = {'MASTERS': {}, 'PEERS': {}, 'OPENBRIDGES': {}, 'SETUP': {}}
 BRIDGES     = {}
 BTABLE      = {'BRIDGES': {}, 'SETUP': {}}
-#BTABLE['BRIDGES'] = {}
 BRIDGES_RX  = ''
 CONFIG_RX   = ''
 LOGBUF      = deque(100*[''], 100)
-lastheard   = deque(maxlen = LASTHEARD_ROWS)
-GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'masters': {}, 'opb': {}, 'peers': {}, 'statictg':{}}
-
-RED         = 'ff6600'
-BLACK       = '000000'
-GREEN       = '90EE90'
-GREEN2      = '008000'
-BLUE        = '0000ff'
-ORANGE      = 'ff8000'
-WHITE       = 'ffffff'
-WHITE2      = 'f9f9f9f9'
-YELLOW      = 'fffccd'
+lsthrd_log = deque(maxlen=50)
+lsthrd = deque(maxlen=LASTHEARD_ROWS)
+# lastheard   = deque(maxlen = LASTHEARD_ROWS)
+GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'lnksys': {}, 'opb': {}, 'peers': {}, 'statictg':{},
+     'log':{}, 'lsthrd_log':{}}
 
 # Define setup setings
 CTABLE['SETUP']['LASTHEARD'] = LASTHEARD_INC
@@ -262,28 +254,35 @@ def time_str(_time, param):
         return f'{seconds}s'
  
 
-def lastheard_hdl(p):
+def pkl_hdlr(p):
     if p == 'get':
         try:
             if isfile('lastheard.pkl'):
                 with open('lastheard.pkl', 'rb') as fh:
-                    temp_pkl = pkl_load(fh)
-                for item in reversed(temp_pkl):
-                    lastheard.appendleft(item)
-                logger.info(f'{len(lastheard)} entries imported from lastheard.pkl')
+                    tmp_pkl = pkl_load(fh)
+                for dict_ in tmp_pkl:
+                    for entry in reversed(tmp_pkl[dict_]):
+                        if dict_ == 'lsthrd':
+                            deque_ = lsthrd
+                        else:
+                            deque_ = lsthrd_log
+                        deque_.appendleft(entry)
+                    logger.info(f'{len(deque_)} entries imported from {dict_}')
+
         except Exception as err:
-            logger.warning(err)
+            logger.warning(f'Error when loading pickle file.\n{err}')
 
     elif p == 'save':
         with open('lastheard.pkl', 'wb') as fh:
-            pkl_dump(lastheard,fh)
+            tmp_pkl = {'lsthrd':lsthrd, 'lsthrd_log':lsthrd_log}
+            pkl_dump(tmp_pkl,fh)
         logger.debug('lastheard.pkl saved correctly')
 
 
 def error_hdl(failure):
     # Called when loop execution failed.
-    logger.error(failure.getBriefTraceback())
-    #reactor.stop()
+    logger.error(f'Loop error: {failure.getBriefTraceback()}, stopping the reactor.')
+    reactor.stop()
 
 
 ##################################################
@@ -300,8 +299,6 @@ def cleanTE():
                 td = int(round(abs((td)) / 60))
                 if td > 3:
                     CTABLE['MASTERS'][system]['PEERS'][peer][timeS]['TS'] = False
-                    CTABLE['MASTERS'][system]['PEERS'][peer][timeS]['COLOR'] = BLACK
-                    CTABLE['MASTERS'][system]['PEERS'][peer][timeS]['BGCOLOR'] = WHITE2
                     CTABLE['MASTERS'][system]['PEERS'][peer][timeS]['TYPE'] = ''
                     CTABLE['MASTERS'][system]['PEERS'][peer][timeS]['SUB'] = ''
                     CTABLE['MASTERS'][system]['PEERS'][peer][timeS]['SRC'] = ''
@@ -315,8 +312,6 @@ def cleanTE():
               td = int(round(abs((td)) / 60))
               if td > 3:
                  CTABLE['PEERS'][system][timeS]['TS'] = False
-                 CTABLE['PEERS'][system][timeS]['COLOR'] = BLACK
-                 CTABLE['PEERS'][system][timeS]['BGCOLOR'] = WHITE2
                  CTABLE['PEERS'][system][timeS]['TYPE'] = ''
                  CTABLE['PEERS'][system][timeS]['SUB'] = ''
                  CTABLE['PEERS'][system][timeS]['SRC'] = ''
@@ -406,8 +401,6 @@ def add_hb_peer(_peer_conf, _ctable_loc, _peer):
     # SLOT 1&2 - for real-time montior: make the structure for later use
     for ts in range(1,3):
         _ctable_peer[ts]= {}
-        _ctable_peer[ts]['COLOR'] = ''
-        _ctable_peer[ts]['BGCOLOR'] = ''
         _ctable_peer[ts]['TS'] = ''
         _ctable_peer[ts]['TYPE'] = ''
         _ctable_peer[ts]['SUB'] = ''
@@ -598,12 +591,9 @@ def build_bridge_table(_bridges):
 
             if system['ACTIVE'] == True:
                 _stats_table[_bridge][system['SYSTEM']]['ACTIVE'] = 'Connected'
-                _stats_table[_bridge][system['SYSTEM']]['COLOR'] = BLACK
-                _stats_table[_bridge][system['SYSTEM']]['BGCOLOR'] = GREEN
+
             elif system['ACTIVE'] == False:
                 _stats_table[_bridge][system['SYSTEM']]['ACTIVE'] = 'Disconnected'
-                _stats_table[_bridge][system['SYSTEM']]['COLOR'] = WHITE
-                _stats_table[_bridge][system['SYSTEM']]['BGCOLOR'] = RED
 
             for i in range(len(system['ON'])):
                 system['ON'][i] = str(int_id(system['ON'][i]))
@@ -630,20 +620,21 @@ def build_stats():
         active_groups = [group for group, value in GROUPS.items() if value]
         if CONFIG:
             if 'main' in active_groups:
-                main = 'i' + itemplate.render(_table=CTABLE, dbridges=BTABLE['SETUP']['BRIDGES'], lastheard=lastheard)
+                main = 'i' + itemplate.render(_table=CTABLE, lastheard=lsthrd)
                 dashboard_server.broadcast(main, 'main')
-            if 'peers' in active_groups:
-                peers = 'p' + ptemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
-                dashboard_server.broadcast(peers, 'peers')
-            if 'masters' in active_groups:
-                masters = 'c' + ctemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'],emaster=EMPTY_MASTERS)
-                dashboard_server.broadcast(masters, 'masters')
+            if 'lnksys' in active_groups:
+                lnksys = 'c' + ctemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)
+                dashboard_server.broadcast(lnksys, 'lnksys')
             if 'opb' in active_groups: 
                 opb = 'o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
                 dashboard_server.broadcast(opb, 'opb')
             if 'statictg' in active_groups:
                 statictg = 's' + stemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)
                 dashboard_server.broadcast(statictg, 'statictg')
+            if 'lsthrd_log' in active_groups:
+                lsth_log = 'h' + htemplate.render(_table=lsthrd_log)
+                dashboard_server.broadcast(lsth_log, 'lsthrd_log')
+
         if BRIDGES and BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
             if 'bridge' in active_groups:
                 bridges = 'b' + btemplate.render(_table=BTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
@@ -669,7 +660,7 @@ def build_tgstats():
         # Get the static TG of the server
         for system in CONFIG:
             if system not in tmp_dict: continue
-            if not srv_info:
+            if not srv_info and '_default_options' in CONFIG[system]:
                 CTABLE['SERVER']['SINGLE_MODE'] = CONFIG[system]['SINGLE_MODE']
                 for item in CONFIG[system]['_default_options'].split(';')[:2]:
                     if len(item) > 11 and item[:11] == 'TS1_STATIC=':
@@ -695,7 +686,6 @@ def build_tgstats():
                 if system['ACTIVE'] == False or system['SYSTEM'][:3] == 'OBP' or system['TO_TYPE'] == 'OFF': continue
                 if system['SYSTEM'] not in tmp_dict: continue
                 for peer in CTABLE['MASTERS'][system['SYSTEM']]['PEERS']:
-
                     CTABLE['MASTERS'][system['SYSTEM']]['PEERS'][peer]['SINGLE_TS'+str(system['TS'])] = {'TGID': int_id(system['TGID']), 'TO': time_str(system['TIMER'],'to')}
 
 
@@ -729,19 +719,13 @@ def rts_update(p):
     if system in CTABLE['MASTERS']:
         for peer in CTABLE['MASTERS'][system]['PEERS']:
             if sourcePeer == peer:
-                bgcolor = RED
                 crxstatus = "RX"
-                color = WHITE
             else:
-                bgcolor = GREEN
                 crxstatus = "TX"
-                color = BLACK
 
             if action == 'START':
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TIMEOUT'] = timeout
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TS'] = True
-                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['COLOR'] = color
-                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['BGCOLOR'] = bgcolor
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TYPE'] = callType
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['SUB'] = f'{alias_short(sourceSub, subscriber_ids)} ({sourceSub})'
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['CALL'] = f'{alias_call(sourceSub, subscriber_ids)}'
@@ -751,8 +735,6 @@ def rts_update(p):
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TRX'] = crxstatus
             if action == 'END':
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TS'] = False
-                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['COLOR'] = BLACK
-                CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['BGCOLOR'] = WHITE2
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TYPE'] = ''
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['SUB'] = ''
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['CALL'] = ''
@@ -769,21 +751,14 @@ def rts_update(p):
                 del CTABLE['OPENBRIDGES'][system]['STREAMS'][streamId]
 
     if system in CTABLE['PEERS']:
-        bgcolor = GREEN
         if trx == 'RX':
-            bgcolor = RED
             prxstatus = "RX"
-            color = WHITE
         else:
-            bgcolor = GREEN
             prxstatus = "TX"
-            color = BLACK
 
         if action == 'START':
             CTABLE['PEERS'][system][timeSlot]['TIMEOUT'] = timeout
             CTABLE['PEERS'][system][timeSlot]['TS'] = True
-            CTABLE['PEERS'][system][timeSlot]['COLOR'] = color
-            CTABLE['PEERS'][system][timeSlot]['BGCOLOR'] = bgcolor
             CTABLE['PEERS'][system][timeSlot]['SUB']= f'{alias_short(sourceSub, subscriber_ids)} ({sourceSub})'
             CTABLE['PEERS'][system][timeSlot]['CALL'] = f'{alias_call(sourceSub, subscriber_ids)}'
             CTABLE['PEERS'][system][timeSlot]['SRC'] = sourcePeer
@@ -792,8 +767,6 @@ def rts_update(p):
             CTABLE['PEERS'][system][timeSlot]['TRX'] = prxstatus
         if action == 'END':
             CTABLE['PEERS'][system][timeSlot]['TS'] = False
-            CTABLE['PEERS'][system][timeSlot]['COLOR'] = BLACK
-            CTABLE['PEERS'][system][timeSlot]['BGCOLOR'] = WHITE2
             CTABLE['PEERS'][system][timeSlot]['TYPE'] = ''
             CTABLE['PEERS'][system][timeSlot]['SUB'] = ''
             CTABLE['PEERS'][system][timeSlot]['CALL'] = ''
@@ -856,14 +829,13 @@ def process_message(_bmessage):
                     if LASTHEARD_INC:
                         # save QSOs to lastheared.log for which transmission duration is longer than 2 sec, 
                         # use >=0 instead of >2 if you want to record all activities
-                        if int(float(p[9])) > 2: 
-                            log_lh_message = f'{_now},{p[9]},{p[0]},{p[1]},{p[3]},{p[5]},{alias_call(int(p[5]), subscriber_ids)},TS{p[7]},TG{p[8]},{alias_tgid(int(p[8]), talkgroup_ids)},{p[6]},{alias_short(int(p[6]), subscriber_ids)}'
-                            # Delete duplicated entries in lastheard
-                            for item in lastheard:
+                        if int(float(p[9])) > 2:
+                            lsthrd_log.appendleft([_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
+                            for item in lsthrd:
                                 if p[6] == item[10]:
-                                    lastheard.remove(item)
+                                    lsthrd.remove(item)
                                     break
-                            lastheard.appendleft([_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
+                            lsthrd.appendleft([_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
                     # End of Lastheard
                     # Removing obsolete entries from the sys_list (3 sec)
                     for item in list(sys_list):
@@ -871,7 +843,7 @@ def process_message(_bmessage):
                             sys_list.remove(item)
 
                 elif p[1] == 'START':
-                    log_message = f'{_now[10:19]} {p[0][6:]} {p[1]}   SYS: {p[3]:8.8s} SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: {p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s}'
+                    log_message = f'{_now[10:19]} {p[0][6:]} {p[1]} SYS: {p[3]:8.8s} SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: {p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s}'
                     timeST = time()
                     sys_list.append([p[3],p[4],timeST])
                 elif p[1] == 'END' and start_sys==0:
@@ -881,15 +853,15 @@ def process_message(_bmessage):
                 else:
                     log_message = f'{_now[10:19]} UNKNOWN GROUP VOICE LOG MESSAGE'
 
-                dashboard_server.broadcast('l' + log_message, 'all_clients')
+                dashboard_server.broadcast('l' + log_message, 'log')
                 LOGBUF.append(log_message)
 
         elif p[0] == 'UNIT DATA HEADER' and p[2] != 'TX' and p[5] not in opbfilter:
-            for item in lastheard:
+            for item in lsthrd:
                 if p[6] == item[10]:
-                    lastheard.remove(item)
+                    lsthrd.remove(item)
                     break
-            lastheard.appendleft([_now, 'DATA', p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
+            lsthrd.appendleft([_now, 'DATA', p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
 
         else:
             logger.warning(f'{_now[10:19]} UNKNOWN LOG MESSAGE')      
@@ -971,25 +943,26 @@ class dashboard(WebSocketServerProtocol):
             logger.info('Text message received: %s', payload)
             if msg[0] == 'conf':
                 for group in msg[1:]:
-                    if group in ('main', 'bridge', 'masters', 'opb', 'peers', 'statictg'):
+                    if group in GROUPS:
                         self.factory.register(self, group)
                         if group == 'bridge':
                             if BRIDGES and BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
                                 self.sendMessage(('b' + btemplate.render(_table=BTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
-                        elif group == 'masters':
-                           self.sendMessage(('c' + ctemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'],emaster=EMPTY_MASTERS)).encode('utf-8'))
-                        elif group== 'peers':
-                            self.sendMessage(('p' + ptemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
+                        elif group == 'lnksys':
+                           self.sendMessage(('c' + ctemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)).encode('utf-8'))
                         elif group == 'opb':
                             self.sendMessage(('o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
                         elif group == 'main':
-                            self.sendMessage(('i' + itemplate.render(_table=CTABLE, dbridges=BTABLE['SETUP']['BRIDGES'], lastheard=lastheard)).encode('utf-8'))
+                            self.sendMessage(('i' + itemplate.render(_table=CTABLE, lastheard=lsthrd)).encode('utf-8'))
                         elif group == 'statictg':
                             self.sendMessage(('s' + stemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)).encode('utf-8'))
-                        # for _message in LOGBUF:
-                        #     if _message:
-                        #         _bmessage = ('l' + _message).encode('utf-8')
-                        #         self.sendMessage(_bmessage)
+                        elif group == 'lsthrd_log':
+                            self.sendMessage(('h' + htemplate.render(_table=lsthrd_log)).encode('utf-8'))
+                        elif group == 'log':
+                            for _message in LOGBUF:
+                                if _message:
+                                    _bmessage = ('l' + _message).encode('utf-8')
+                                    self.sendMessage(_bmessage)
 
     def connectionLost(self, reason):
         WebSocketServerProtocol.connectionLost(self, reason)
@@ -1041,7 +1014,7 @@ if __name__ == '__main__':
     logger.addHandler(ch)
 
     logger.info('monitor.py starting up')
-    logger.info('\n\n\tCopyright (c) 2016, 2017, 2018, 2019\n\tThe Regents of the K0USY Group. All rights reserved.\n\n\tPython 3 port:\n\t2019 Steve Miller, KC1AWV <smiller@kc1awv.net>\n\n\tHBMonitor v2 SP2ONG 2019-2021\n\n')
+    logger.info('\n\n\tCopyright (c) 2016, 2017, 2018, 2019\n\tThe Regents of the K0USY Group. All rights reserved.\n\n\tPython 3 port:\n\t2019 Steve Miller, KC1AWV <smiller@kc1awv.net>\n\n\tFDMR-Monitor OA4DOA 2021\n\n')
     
     # Download alias files
     for file,url in ((PEER_FILE,PEER_URL),(SUBSCRIBER_FILE,SUBSCRIBER_URL),(TGID_FILE,TGID_URL)):
@@ -1076,8 +1049,8 @@ if __name__ == '__main__':
         logger.info('ID ALIAS MAPPER: local_peer_ids added peer_ids dictionary')
         peer_ids.update(local_peer_ids)
 
-    # Import entries from log to lastheard
-    lastheard_hdl('get')
+    # Import entries from lastheard pickle
+    pkl_hdlr('get')
 
     # Jinja2 Stuff
     env = Environment(
@@ -1087,11 +1060,11 @@ if __name__ == '__main__':
 
     # define tables template
     itemplate = env.get_template('main_table.html')
-    ptemplate = env.get_template('peers_table.html')
-    ctemplate = env.get_template('masters_table.html')
+    ctemplate = env.get_template('lnksys_table.html')
     otemplate = env.get_template('opb_table.html')
     btemplate = env.get_template('bridge_table.html')
     stemplate = env.get_template('statictg_table.html')
+    htemplate = env.get_template('lasthrd_log.html')
 
     # Start update loop
     update_stats = task.LoopingCall(build_stats)
@@ -1102,8 +1075,8 @@ if __name__ == '__main__':
         timeout = task.LoopingCall(timeout_clients)
         timeout.start(10).addErrback(error_hdl)
 
-    # Start update loop
-    lastheard_loop = task.LoopingCall(lastheard_hdl, 'save')
+    # Start pickle handler
+    lastheard_loop = task.LoopingCall(pkl_hdlr, 'save')
     lastheard_loop.start(30).addErrback(error_hdl)
 
     # Connect to HBlink
