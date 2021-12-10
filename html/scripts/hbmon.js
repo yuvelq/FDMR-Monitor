@@ -10,19 +10,19 @@ window.onload = function() {
 
   bridge_table = document.getElementById('bridge');
   main_table = document.getElementById('main');
-  masters_table = document.getElementById('masters');
+  lnksys_table = document.getElementById('lnksys');
   opb_table = document.getElementById('opb');
-  peers_table = document.getElementById('peers');
   statictg_table = document.getElementById('statictg');
+  lsthrd_log_table = document.getElementById('lsthrd_log');
 
   wsuri = (((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.hostname + ":9000");
 
   if ("WebSocket" in window) {
-     sock = new WebSocket(wsuri);
+    sock = new WebSocket(wsuri);
   } else if ("MozWebSocket" in window) {
-     sock = new MozWebSocket(wsuri);
+    sock = new MozWebSocket(wsuri);
   } else {
-     if (ellog != null) {
+    if (ellog != null) {
     log("Browser does not support WebSocket!");}
   }
 
@@ -40,9 +40,8 @@ window.onload = function() {
       sock = null;
       bridge_table.innerHTML = "";
       main_table.innerHTML = "";
-      masters_table.innerHTML = "";
+      lnksys_table.innerHTML = "";
       opb_table.innerHTML = "";
-      peers_table.innerHTML = "";
       statictg_table.innerHTML = "";
     }
 
@@ -57,42 +56,43 @@ window.onload = function() {
         Imsg(message);         
       } else if (opcode == "o") {
         Omsg(message);         
-      } else if (opcode == "p") {
-        Pmsg(message);
       } else if (opcode == "s") {
         Smsg(message);
+      } else if (opcode == 'h') {
+        Hmsg(message);
       } else if (opcode == "l") {
-          if (ellog != null) { 
-            log(message);}
+        if (ellog != null) { 
+          log(message);}
       } else if (opcode == "q") {
-          log(message);
-          for (i = 0; i < conf_groups.length; i++) {
-            var group = conf_groups[i];
-            if (group == "bridge") {
-              bridge_table.innerHTML = "";
-            } else if (group == "main") {
-                main_table.innerHTML = "";
-            } else if (group == "masters") {
-                masters_table.innerHTML = "";
-            } else if (group == "opb") {
-                opb_table.innerHTML = "";
-            } else if (group == "peers") {
-              peers_table.innerHTML = "";
-              }
-          }
+        log(message);
+        for (i = 0; i < conf_groups.length; i++) {
+          var group = conf_groups[i];
+          if (group == "bridge") {
+            bridge_table.innerHTML = "";
+          } else if (group == "main") {
+            main_table.innerHTML = "";
+          } else if (group == "lnksys") {
+            masters_table.innerHTML = "";
+          } else if (group == "opb") {
+            opb_table.innerHTML = "";
+          } else if (group == "peers") {
+            peers_table.innerHTML = "";
+            }
+        }
       } else {
-          log("Unknown Message Received: " + message);
+        log("Unknown Message Received: " + message);
         }
     }
   }
 };
 
 function Bmsg(_msg) {bridge_table.innerHTML = _msg;};  
-function Cmsg(_msg) {masters_table.innerHTML = _msg;};
+function Cmsg(_msg) {lnksys_table.innerHTML = _msg;};
 function Imsg(_msg) {main_table.innerHTML = _msg;};
 function Omsg(_msg) {opb_table.innerHTML = _msg;};
-function Pmsg(_msg) {peers_table.innerHTML = _msg;};
 function Smsg(_msg) {statictg_table.innerHTML = _msg;};
+function Hmsg(_msg) {lsthrd_log_table.innerHTML = _msg;};
+
 
 function log(_msg) {
   ellog.innerHTML += _msg + '\n';
@@ -100,10 +100,13 @@ function log(_msg) {
 
 // Find tables that are present
 function conf_id() {
-  const groups = ["main", "bridge", "masters", "opb", "peers", "statictg"];
-  var tags = document.getElementsByTagName("p");
+  const groups = ["main", "bridge", "lnksys", "opb", "statictg", "log","lsthrd_log"];
+  const tags = [document.getElementsByTagName("p"), document.getElementsByTagName("pre")]
   for (i = 0; i < tags.length; i++) {
-    if ( groups.includes(tags[i].id) ) {
-      conf_groups.push(tags[i].id);}
+    for (j = 0; j < tags[i].length; j++)
+      if (groups.includes(tags[i][j].id)) {
+        conf_groups.push(tags[i][j].id);
+    }
   }
+  console.log(conf_groups)
 };
