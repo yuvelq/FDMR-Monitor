@@ -4,7 +4,6 @@ header("Content-type: text/css");
 include_once '../include/config.php';
 ?>
 .link { <?php echo THEME_COLOR ?> }
-.button <?php echo "{".THEME_COLOR."}\n"; ?>
 .dropbtn <?php echo "{".THEME_COLOR."}\n"; ?>
 
 table, td, th {
@@ -59,7 +58,7 @@ table.stctg {
   margin-bottom:5px;
   background-color: #f9f9f9f9;
 }
-.ts2-bkgnd td {
+.ts1-bkgnd {
   background-color: #e6e6e69d;
 }
 .stctg .th1wd {width: 120px;}
@@ -96,13 +95,11 @@ table.lnksys {
 table.log {
   background-color: #f9f9f9f9;
   border-collapse: collapse;
-  /* border: 1px solid #C1DAD7; */
   width: 100%;
   text-align: center;
 }
 .log th {
   height: 30px;
-  /* border: .5px solid #d0d0d0; */
 }
 .log tr:nth-child(even) {
   background-color: #e6e6e69d;
@@ -159,8 +156,6 @@ span.tooltiptext.c2s-pos2 {
   text-align: center;
 }
 
-
-
 a:link {
   text-decoration: none;
   font-size: 9.5pt;
@@ -213,7 +208,9 @@ a:active {
   opacity: 1;
   visibility: visible;
 }
-.button {
+a.button {
+  <?php echo THEME_COLOR."\n"; ?>
+  text-shadow: none;
   border: none;
   padding: 8px;
   text-align: center;
@@ -226,7 +223,7 @@ a:active {
   box-shadow: 0px 8px 10px rgba(0,0,0,0.1);
 }
 
-.link:hover {background-color:rgb(140,140,140);background: rgb(140,140,140); color:white;}  
+.button:hover {background-color:rgb(140,140,140);background: rgb(140,140,140); color:white;}  
 .dropdown:hover .dropbtn {background-color:rgb(140,140,140);background: rgb(140,140,140); color:white;} 
 
 .dropbtn {
@@ -370,9 +367,5 @@ table.opb {
 .TX {background-color: #90EE90;color:black;}
 .RX {background-color: #ff6600;color:#ffffff;}
 
-.txt-ctr {text-align: center;}
-
 .fnt-7pt {font-size: 7pt;}
 .fnt-8pt {font-size: 8pt;}
-
-.txt-bold {font-weight: bold;}
