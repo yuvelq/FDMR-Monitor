@@ -86,15 +86,14 @@
     </tr>
   {% endfor %}
   </table>
-</fieldset><br>
+</fieldset>
 {% endif %}
 
 <fieldset class="big">
   <legend><b>&nbsp;.: Connected to Server :.&nbsp;</b></legend>
-  <table class="conn2srv">
+  <div class="conn2srv">
     {% if _table['MASTERS']|length >0 %}
-    <tr><td><br>
-      <span class="tittle">USERS:</span><br>
+      <h4 class="tittle">USERS:</h4>
         <div class="hs-peers">
           {% for _master in _table['MASTERS'] %}    
           {% if _table['MASTERS'][_master]['PEERS']|length >0 %}
@@ -121,8 +120,7 @@
         </div>
         {% endif %}
         {% if _table['PEERS']|length >0 %}
-        <br>
-        <span class="tittle">PEERS:</span>
+        <h4 class="tittle">PEERS:</h4>
         <div class="hs-peers">
           {% for _peer, _pdata  in _table['PEERS'].items() %}
           <div class="tooltip {{'bkgnd-8ecfb4 txt-464646' if _table['PEERS'][_peer]['STATS']['CONNECTION'] == 'YES' else 'bkgnd-ff0000 txt-white'}}"><b>&nbsp;&nbsp;{{_peer}}&nbsp;&nbsp;</b>
@@ -131,11 +129,9 @@
             {% else %}
             <span class="tooltiptext c2s-pos2"><b>Disconnected</b></span>
             {% endif %}
-          </div>&nbsp;
+          </div>
           {% endfor %}
         </div>
         {% endif %}
-        <br>
-    </td></tr>
-  </table>
+  </div>
 </fieldset>

@@ -84,7 +84,7 @@ LOGBUF      = deque(100*[''], 100)
 lsthrd_log = deque(maxlen=50)
 lsthrd = deque(maxlen=LASTHEARD_ROWS)
 # lastheard   = deque(maxlen = LASTHEARD_ROWS)
-GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'lnksys': {}, 'opb': {}, 'peers': {}, 'statictg':{},
+GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'lnksys': {}, 'opb': {}, 'statictg':{},
      'log':{}, 'lsthrd_log':{}}
 
 # Define setup setings
@@ -830,12 +830,14 @@ def process_message(_bmessage):
                         # save QSOs to lastheared.log for which transmission duration is longer than 2 sec, 
                         # use >=0 instead of >2 if you want to record all activities
                         if int(float(p[9])) > 2:
-                            lsthrd_log.appendleft([_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
+                            lsthrd_msg = [_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]),
+                                    talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')]
+                            lsthrd_log.appendleft(lsthrd_msg)
                             for item in lsthrd:
                                 if p[6] == item[10]:
                                     lsthrd.remove(item)
                                     break
-                            lsthrd.appendleft([_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
+                            lsthrd.appendleft(lsthrd_msg)
                     # End of Lastheard
                     # Removing obsolete entries from the sys_list (3 sec)
                     for item in list(sys_list):
@@ -861,7 +863,10 @@ def process_message(_bmessage):
                 if p[6] == item[10]:
                     lsthrd.remove(item)
                     break
-            lsthrd.appendleft([_now, 'DATA', p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]), talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')])
+            lsthrd_msg = [_now, 'DATA', p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]),
+                 talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')]
+            for dq in (lsthrd, lsthrd_log):
+                dq.appendleft(lsthrd_msg)
 
         else:
             logger.warning(f'{_now[10:19]} UNKNOWN LOG MESSAGE')      
