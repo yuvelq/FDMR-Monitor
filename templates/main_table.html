@@ -80,7 +80,7 @@
       <td class="txt-002d62"><b>{{ itm[11][1] }}</b></td>
     {% endif %}
       <td class="txt-b5651d"><b>{{ itm[8] }}</b></td>
-      <td class="txt-green"><b>{{ itm[9] }}</b></td>
+      <td class="txt-green"><b>{{ itm[9]|safe }}</b></td>
       <td {{ 'class="bkgnd-1d1"'|safe if itm[1] == 'DATA' else None }}>{{ 'DATA' if itm[1] == 'DATA' else itm[1]|int }}</td>
       <td>{{ itm[4] }}</td>
     </tr>
