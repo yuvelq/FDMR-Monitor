@@ -1,5 +1,5 @@
 [Unit]
-Description=HBMonitor
+Description=FDMR Monitor
 # To make the network-online.target available
 # systemctl enable systemd-networkd-wait-online.service
 
@@ -8,9 +8,9 @@ Wants=network-online.target
 
 [Service]
 StandardOutput=null
-WorkingDirectory=/opt/HBMonv2
+WorkingDirectory=/opt/FDMR-Monitor
 RestartSec=3
-ExecStart=/usr/bin/python3 /opt/HBMonv2/monitor.py
+ExecStart=python3 /opt/FDMR-Monitor/monitor.py
 Restart=on-abort
 
 [Install]
