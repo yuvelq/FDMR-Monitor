@@ -31,3 +31,8 @@ TGID_URL        = 'http://downloads.freedmr.uk/downloads/talkgroup_ids.json'
 # Settings for log files
 LOG_PATH        = './log/'                       # MUST END IN '/'
 LOG_NAME        = 'hbmon.log'
+
+USE_SSL         = False
+SSL_CERTIFICATE = './ssl/cert.pem'
+SSL_PRIVATEKEY  = './ssl/key.pem'
+
