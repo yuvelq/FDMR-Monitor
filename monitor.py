@@ -91,6 +91,8 @@ GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'lnksys': {}, 'opb': {}, 
 CTABLE['SETUP']['LASTHEARD'] = LASTHEARD_INC
 BTABLE['SETUP']['BRIDGES'] = BRIDGES_INC
 
+PKL_FILE = Path(PATH, LASTHEARD_CACHE)
+
 # create empty systems list
 sys_list = []
 
@@ -257,8 +259,8 @@ def time_str(_time, param):
 def pkl_hdlr(p):
     if p == 'get':
         try:
-            if isfile('lastheard.pkl'):
-                with open('lastheard.pkl', 'rb') as fh:
+            if isfile(PKL_FILE):
+                with open(PKL_FILE, 'rb') as fh:
                     tmp_pkl = pkl_load(fh)
                 for dict_ in tmp_pkl:
                     for entry in reversed(tmp_pkl[dict_]):
@@ -273,7 +275,7 @@ def pkl_hdlr(p):
             logger.warning(f'Error when loading pickle file.\n{err}')
 
     elif p == 'save':
-        with open('lastheard.pkl', 'wb') as fh:
+        with open(PKL_FILE, 'wb') as fh:
             tmp_pkl = {'lsthrd':lsthrd, 'lsthrd_log':lsthrd_log}
             pkl_dump(tmp_pkl,fh)
         logger.debug('lastheard.pkl saved correctly')
