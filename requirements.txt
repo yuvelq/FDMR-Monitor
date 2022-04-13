@@ -4,4 +4,4 @@ bitstring
 autobahn
 jinja2==2.11.3
 MarkupSafe==2.0.1
-
+pyOpenSSL==22.0.0
