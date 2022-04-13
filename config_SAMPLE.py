@@ -16,7 +16,7 @@ CLIENT_TIMEOUT  = 0                              # Clients are timed out after t
 OPB_FILTER = ""
 
 # Files and stuff for loading alias files for mapping numbers to names
-PATH            = './'                           # MUST END IN '/'
+PATH            = './data/'                      # MUST END IN '/'
 PEER_FILE       = 'peer_ids.json'                # Will auto-download 
 SUBSCRIBER_FILE = 'subscriber_ids.csv'           # Will auto-download 
 TGID_FILE       = 'talkgroup_ids.json'           # User provided
