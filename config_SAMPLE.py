@@ -34,6 +34,7 @@ TGID_URL        = 'http://downloads.freedmr.uk/downloads/talkgroup_ids.json'
 LOG_PATH        = './log/'                       # MUST END IN '/'
 LOG_NAME        = 'hbmon.log'
 
+WEBSOCKET_PORT  = 9000
 USE_SSL         = False
 SSL_CERTIFICATE = './ssl/cert.pem'
 SSL_PRIVATEKEY  = './ssl/key.pem'

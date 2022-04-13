@@ -1106,14 +1106,14 @@ if __name__ == '__main__':
     if USE_SSL:
         from twisted.internet import ssl
         certificate = ssl.DefaultOpenSSLContextFactory(SSL_PRIVATEKEY, SSL_CERTIFICATE)
-        dashboard_server = dashboardFactory('wss://*:9000')
+        dashboard_server = dashboardFactory('wss://*:%d' % WEBSOCKET_PORT)
         dashboard_server.protocol = dashboard
-        reactor.listenSSL(9000, dashboard_server,certificate)
+        reactor.listenSSL(WEBSOCKET_PORT, dashboard_server,certificate)
 
     else:
         # Create websocket server to push content to clients via http:// non SSL
-        dashboard_server = dashboardFactory('ws://*:9000')
+        dashboard_server = dashboardFactory('ws://*:%d' % WEBSOCKET_PORT)
         dashboard_server.protocol = dashboard
-        reactor.listenTCP(9000, dashboard_server)
+        reactor.listenTCP(WEBSOCKET_PORT, dashboard_server)
 
     reactor.run()
