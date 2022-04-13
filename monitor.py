@@ -1097,18 +1097,21 @@ if __name__ == '__main__':
     # create websocket server to push content to clients via SSL https://
     # the web server apache2 should be configured with a signed certificate for example Letsencrypt
     # we need install pyOpenSSL required by twisted: pip3 install pyOpenSSL
-    # and add load ssl module in line number 43: from twisted.internet import reactor, task, ssl
+    # and add load ssl module in line number 43: 
     #
     # put certificate https://letsencrypt.org/ used in apache server 
-    #certificate = ssl.DefaultOpenSSLContextFactory('/etc/letsencrypt/live/hbmon.dmrserver.org/privkey.pem', '/etc/letsencrypt/live/hbmon.dmrserver.org/cert.pem')
-    #dashboard_server = dashboardFactory('wss://*:9000')
-    #dashboard_server.protocol = dashboard
-    #reactor.listenSSL(9000, dashboard_server,certificate)
 
-    # Create websocket server to push content to clients via http:// non SSL
-    dashboard_server = dashboardFactory('ws://*:9000')
-    dashboard_server.protocol = dashboard
-    reactor.listenTCP(9000, dashboard_server)
+    if USE_SSL:
+        from twisted.internet import ssl
+        certificate = ssl.DefaultOpenSSLContextFactory(SSL_PRIVATEKEY, SSL_CERTIFICATE)
+        dashboard_server = dashboardFactory('wss://*:9000')
+        dashboard_server.protocol = dashboard
+        reactor.listenSSL(9000, dashboard_server,certificate)
 
+    else:
+        # Create websocket server to push content to clients via http:// non SSL
+        dashboard_server = dashboardFactory('ws://*:9000')
+        dashboard_server.protocol = dashboard
+        reactor.listenTCP(9000, dashboard_server)
 
     reactor.run()
