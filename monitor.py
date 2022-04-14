@@ -61,6 +61,12 @@ from config import *
 # SP2ONG - Increase the value if HBlink link break occurs
 NetstringReceiver.MAX_LENGTH = 500000000
 
+
+PKL_FILE = Path(PATH, 'lastheard.pkl')
+if 'LASTHEARD_CACHE' in vars() or 'LASTHEARD_CACHE' in globals():
+    PKL_FILE = Path(PATH, LASTHEARD_CACHE)
+
+
 # Opcodes for reporting protocol to HBlink
 OPCODE = {
     'CONFIG_REQ': '\x00',
@@ -90,8 +96,6 @@ GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'lnksys': {}, 'opb': {}, 
 # Define setup setings
 CTABLE['SETUP']['LASTHEARD'] = LASTHEARD_INC
 BTABLE['SETUP']['BRIDGES'] = BRIDGES_INC
-
-PKL_FILE = Path(PATH, LASTHEARD_CACHE)
 
 # create empty systems list
 sys_list = []
@@ -1099,21 +1103,34 @@ if __name__ == '__main__':
     # create websocket server to push content to clients via SSL https://
     # the web server apache2 should be configured with a signed certificate for example Letsencrypt
     # we need install pyOpenSSL required by twisted: pip3 install pyOpenSSL
-    # and add load ssl module in line number 43: 
+    # and add load ssl module in line number 43: from twisted.internet import reactor, task, ssl
     #
     # put certificate https://letsencrypt.org/ used in apache server 
+    #certificate = ssl.DefaultOpenSSLContextFactory('/etc/letsencrypt/live/hbmon.dmrserver.org/privkey.pem', '/etc/letsencrypt/live/hbmon.dmrserver.org/cert.pem')
+    #dashboard_server = dashboardFactory('wss://*:9000')
+    #dashboard_server.protocol = dashboard
+    #reactor.listenSSL(9000, dashboard_server,certificate)
 
-    if USE_SSL:
+    _useSSL = False
+    _websocketPort = 9000
+    if 'USE_SSL' in vars() or 'USE_SSL' in globals():
+        _useSSL = USE_SSL
+
+    if 'WEBSOCKET_PORT' in vars() or 'WEBSOCKET_PORT' in globals():
+        _websocketPort = WEBSOCKET_PORT
+
+    logger.info('Starting webserver on port %d with SSL=%s' % (_websocketPort, _useSSL))
+
+    if _useSSL:
         from twisted.internet import ssl
         certificate = ssl.DefaultOpenSSLContextFactory(SSL_PRIVATEKEY, SSL_CERTIFICATE)
-        dashboard_server = dashboardFactory('wss://*:%d' % WEBSOCKET_PORT)
+        dashboard_server = dashboardFactory('wss://*:%d' % _websocketPort)
         dashboard_server.protocol = dashboard
-        reactor.listenSSL(WEBSOCKET_PORT, dashboard_server,certificate)
+        reactor.listenSSL(_websocketPort, dashboard_server, certificate)
 
     else:
-        # Create websocket server to push content to clients via http:// non SSL
-        dashboard_server = dashboardFactory('ws://*:%d' % WEBSOCKET_PORT)
+        dashboard_server = dashboardFactory('ws://*:%d' % _websocketPort)
         dashboard_server.protocol = dashboard
-        reactor.listenTCP(WEBSOCKET_PORT, dashboard_server)
+        reactor.listenTCP(_websocketPort, dashboard_server)
 
     reactor.run()
