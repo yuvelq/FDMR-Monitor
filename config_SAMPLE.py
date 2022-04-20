@@ -16,13 +16,15 @@ CLIENT_TIMEOUT  = 0                              # Clients are timed out after t
 OPB_FILTER = ""
 
 # Files and stuff for loading alias files for mapping numbers to names
-PATH            = './'                           # MUST END IN '/'
+PATH            = './data/'                      # MUST END IN '/'
 PEER_FILE       = 'peer_ids.json'                # Will auto-download 
 SUBSCRIBER_FILE = 'subscriber_ids.csv'           # Will auto-download 
 TGID_FILE       = 'talkgroup_ids.json'           # User provided
 LOCAL_SUB_FILE  = 'local_subscriber_ids.json'    # User provided (optional, leave '' if you don't use it)
 LOCAL_PEER_FILE = 'local_peer_ids.json'          # User provided (optional, leave '' if you don't use it)
 LOCAL_TGID_FILE = 'local_talkgroup_ids.json'     # User provided (optional, leave '' if you don't use it)
+LASTHEARD_CACHE = 'lastheard.pkl'   
+
 FILE_RELOAD     = 15                              # Number of days before we reload DMR-MARC database files
 PEER_URL        = 'https://database.radioid.net/static/rptrs.json'
 SUBSCRIBER_URL  = 'https://database.radioid.net/static/user.csv'
@@ -31,3 +33,9 @@ TGID_URL        = 'http://downloads.freedmr.uk/downloads/talkgroup_ids.json'
 # Settings for log files
 LOG_PATH        = './log/'                       # MUST END IN '/'
 LOG_NAME        = 'hbmon.log'
+
+WEBSOCKET_PORT  = 9000
+USE_SSL         = False
+SSL_CERTIFICATE = './ssl/cert.pem'
+SSL_PRIVATEKEY  = './ssl/key.pem'
+
