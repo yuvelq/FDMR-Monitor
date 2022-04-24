@@ -72,7 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
   <h2><?= REPORT_NAME;?></h2>
-  <div><?php include_once "buttons.html"; ?></div>
+  <div><?php include_once "buttons.php"; ?></div>
   <fieldset class="selfserv">
     <legend><b>&nbsp;.: Self Service :.&nbsp;</b></legend>
     <script>
