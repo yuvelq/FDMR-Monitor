@@ -3,8 +3,8 @@
 header("Content-type: text/css");
 include_once '../include/config.php';
 ?>
-.link { <?php echo THEME_COLOR ?> }
-.dropbtn <?php echo "{".THEME_COLOR."}\n"; ?>
+.link { <?= THEME_COLOR; ?> }
+.dropbtn { <?= THEME_COLOR; ?> }
 
 table, td, th {
   border: 0.8px solid #d0d0d0; 
@@ -13,7 +13,7 @@ table, td, th {
   border-collapse: collapse;
 }
 th {
-  <?php echo THEME_COLOR. ";" ?>
+  <?= THEME_COLOR."\n"; ?>
 }
 
 #log {
@@ -34,7 +34,7 @@ table.active-qso {
   border-collapse: separate;
 }
 .active-qso th {
-  <?php echo THEME_COLOR; ?>
+  <?= THEME_COLOR."\n"; ?>
   border-radius: 10px;
   font-size : 9pt;
   font-weight: bold;
@@ -42,7 +42,7 @@ table.active-qso {
 }
 .active-qso td {
   line-height: 1.3em;
-  height: <?php echo HEIGHT_ACTIVITY. ";" ?>
+  height: <?= HEIGHT_ACTIVITY.";\n"; ?>
   border-radius: 10px;
   border: 1px solid LightGrey;
   background-color: #f9f9f9f9;
@@ -89,7 +89,6 @@ table.lnksys {
 .lnksys .location {font-size: 92%; color:#b5651d; font-weight:bold}
 .lnksys .peer-conn {font-size: 9pt; background-color: #cefdce;}
 .lnksys .peer-disc {font-size: 9pt; background-color: #ff704d;}
-
 
 /* Last heard table */
 table.log {
@@ -209,7 +208,7 @@ a:active {
   visibility: visible;
 }
 a.button {
-  <?php echo THEME_COLOR."\n"; ?>
+  <?= THEME_COLOR."\n"; ?>
   text-shadow: none;
   border: none;
   padding: 8px;
@@ -218,7 +217,7 @@ a.button {
   display: inline-block;
   font-size: 14px;
   font-weight: 500;
-  margin: 4px 2px;
+  margin: 7px 3px;
   border-radius: 8px;
   box-shadow: 0px 8px 10px rgba(0,0,0,0.1);
 }
@@ -239,7 +238,7 @@ a.button {
   box-shadow: 0px 8px 10px rgba(0,0,0,0.1);
 }
 
-/* The container <div> - needed to position the dropdown content */
+/* The container - needed to position the dropdown content */
 .dropdown {
   position: relative;
   display: inline-block;
