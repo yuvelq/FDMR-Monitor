@@ -3,8 +3,8 @@
 header("Content-type: text/css");
 include_once '../include/config.php';
 ?>
-.link { <?php echo THEME_COLOR ?> }
-.dropbtn <?php echo "{".THEME_COLOR."}\n"; ?>
+.link { <?= THEME_COLOR; ?> }
+.dropbtn { <?= THEME_COLOR; ?> }
 
 table, td, th {
   border: 0.8px solid #d0d0d0; 
@@ -13,7 +13,7 @@ table, td, th {
   border-collapse: collapse;
 }
 th {
-  <?php echo THEME_COLOR. ";" ?>
+  <?= THEME_COLOR."\n"; ?>
 }
 
 #log {
@@ -34,7 +34,7 @@ table.active-qso {
   border-collapse: separate;
 }
 .active-qso th {
-  <?php echo THEME_COLOR; ?>
+  <?= THEME_COLOR."\n"; ?>
   border-radius: 10px;
   font-size : 9pt;
   font-weight: bold;
@@ -42,7 +42,7 @@ table.active-qso {
 }
 .active-qso td {
   line-height: 1.3em;
-  height: <?php echo HEIGHT_ACTIVITY. ";" ?>
+  height: <?= HEIGHT_ACTIVITY.";\n"; ?>
   border-radius: 10px;
   border: 1px solid LightGrey;
   background-color: #f9f9f9f9;
@@ -90,7 +90,6 @@ table.lnksys {
 .lnksys .peer-conn {font-size: 9pt; background-color: #cefdce;}
 .lnksys .peer-disc {font-size: 9pt; background-color: #ff704d;}
 
-
 /* Last heard table */
 table.log {
   background-color: #f9f9f9f9;
@@ -105,20 +104,12 @@ table.log {
   background-color: #e6e6e69d;
 }
 
-table.conn2srv {
-  table-layout:fixed;
-  width:100%;
+.conn2srv {
   font-size: 10pt;
   font-weight: 600;
   margin-top: 5px;
   margin-bottom: 5px;
-  border-collapse: collapse;
-  border: none;
-}
-.conn2srv td {
-  background-color: #f9f9f9f9;
   background-image: linear-gradient(to bottom, #e9e9e9 50%, #bcbaba 100%);
-  border-radius: 10px;
   border: 1px solid LightGrey;
   border-radius: 10px;
 }
@@ -135,8 +126,7 @@ table.conn2srv {
   text-align: left;
   font-size: 9.5pt;
   font-weight: bold;
-  margin-left: 25px;
-  margin-right: 25px;
+  margin: 10px 25px;
   line-height: 1.4;
   white-space: normal;
 }
@@ -209,7 +199,7 @@ a:active {
   visibility: visible;
 }
 a.button {
-  <?php echo THEME_COLOR."\n"; ?>
+  <?= THEME_COLOR."\n"; ?>
   text-shadow: none;
   border: none;
   padding: 8px;
@@ -218,7 +208,7 @@ a.button {
   display: inline-block;
   font-size: 14px;
   font-weight: 500;
-  margin: 4px 2px;
+  margin: 7px 3px;
   border-radius: 8px;
   box-shadow: 0px 8px 10px rgba(0,0,0,0.1);
 }
@@ -239,7 +229,7 @@ a.button {
   box-shadow: 0px 8px 10px rgba(0,0,0,0.1);
 }
 
-/* The container <div> - needed to position the dropdown content */
+/* The container - needed to position the dropdown content */
 .dropdown {
   position: relative;
   display: inline-block;
@@ -298,21 +288,16 @@ body {
 fieldset {
   background-color: #e6e6e6;
   border-radius: 10px;
+  margin: 10px auto;
 }
-
 fieldset.big{
   width: 1100;
-  margin-left: 15px;
-  margin-right: 15px;
 }
 fieldset.med {
-  margin: auto;
   width: 900px;
 }
 fieldset.small {
   width: 70%;
-  margin-left:15px;
-  margin-right:15px;
 }
 legend {
   margin-left: 20px;
