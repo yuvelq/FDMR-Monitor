@@ -104,22 +104,15 @@ table.log {
   background-color: #e6e6e69d;
 }
 
-table.conn2srv {
-  table-layout:fixed;
-  width:100%;
+.conn2srv {
   font-size: 10pt;
   font-weight: 600;
   margin-top: 5px;
   margin-bottom: 5px;
-  border-collapse: collapse;
-  border: none;
-}
-.conn2srv td {
-  background-color: #f9f9f9f9;
   background-image: linear-gradient(to bottom, #e9e9e9 50%, #bcbaba 100%);
-  border-radius: 10px;
   border: 1px solid LightGrey;
   border-radius: 10px;
+
 }
 .conn2srv .tittle {
   margin-left: 7px;
@@ -134,8 +127,7 @@ table.conn2srv {
   text-align: left;
   font-size: 9.5pt;
   font-weight: bold;
-  margin-left: 25px;
-  margin-right: 25px;
+  margin: 10px 25px;
   line-height: 1.4;
   white-space: normal;
 }
@@ -297,21 +289,17 @@ body {
 fieldset {
   background-color: #e6e6e6;
   border-radius: 10px;
+  margin: 10px auto;
 }
 
 fieldset.big{
   width: 1100;
-  margin-left: 15px;
-  margin-right: 15px;
 }
 fieldset.med {
-  margin: auto;
   width: 900px;
 }
 fieldset.small {
   width: 70%;
-  margin-left:15px;
-  margin-right:15px;
 }
 legend {
   margin-left: 20px;
