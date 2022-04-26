@@ -192,7 +192,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       if (gettype($value) == "array") {
         if (count($value) < 1) {
           continue;
-        } else {f
+        } else {
           $value = implode(",", $value);
         }
 
