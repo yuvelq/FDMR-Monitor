@@ -46,17 +46,16 @@ $ts1Err = $ts2Err = $timerErr = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "GET") {
   // Declare default values for options
-  $_SESSION["opt_base"] = array("TS1="=>array(), "TS2="=>array(), "TIMER="=>"default", "SINGLE="=>"default", "VOICE="=>"default");
+  $_SESSION["opt_base"] = array("TS1="=>array(), "TS2="=>array(), "TIMER="=>"", "SINGLE="=>"", "VOICE="=>"");
   // If options not empty
   if ($_SESSION["hs_avail"][$_SESSION["opt_owner"]][0] != NULL) {
     $exp_opts = explode(";", $_SESSION["hs_avail"][$_SESSION["opt_owner"]][0]);
-    // var_dump($exp_opts);
     foreach ($exp_opts as $item) {
       $item_exp = explode("=", $item);
       if (count($item_exp) > 1) {
         $type = $item_exp[0];
         if ($type == "TS1") {
-          $_SESSION["opt_base"]["TS1="] = explode(",", $item_exp[1]);  
+          $_SESSION["opt_base"]["TS1="] = explode(",", $item_exp[1]);
         } elseif ($type == "TS2") {
           $_SESSION["opt_base"]["TS2="] = explode(",", $item_exp[1]);
         } elseif ($type == "TIMER") {
@@ -66,7 +65,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         } elseif ($type == "VOICE") {
           $_SESSION["opt_base"]["VOICE="] = $item_exp[1];
         }
-      } 
+      }
     }
   }
 // When form is posted //
@@ -81,7 +80,6 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       $ts1 = preg_replace(array("/,+\s+/","/\s+,+/","/\s+/","/,+/"), ",", $ts1);
       $ts1_exp = explode(",", $ts1);
       $ts1_array = $_SESSION["opt_base"]["TS1="];
-      // var_dump($ts1_array);
       foreach ($ts1_exp as $item) {
         if ($_POST["aod_ts1"] == "add") {
           if (count($_SESSION["opt_base"]["TS1="]) < 8) {
@@ -110,7 +108,6 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
   // TS2
   if (isset($_POST["ts2"]) and $_POST["ts2"]) {
     $ts2 = check_input($_POST["ts2"]);
-    // var_dump($ts2);
     if (!preg_match("/[^0-9,\s]/", $ts2)) {
       $ts2 = preg_replace(array("/,+\s+/","/\s+,+/","/\s+/","/,+/"), ",", $ts2);
       $ts2_exp = explode(",", $ts2);
@@ -139,19 +136,16 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       $ts2Err = _TSERR_ONLY;
       $opt_err = True;
     }
-  } 
+  }
   // Timer
   if (isset($_POST["timer"])) {
     $timer = check_input($_POST["timer"]);
     if (!preg_match("/[^0-9\s]/", $timer)) {
-      if ($timer == "") {
-        $timer = "default";
-      }
-      if ($timer == "default" or ($timer <= 999 and $timer >= 0)) {
-        if ($timer != $_SESSION["opt_base"]["TIMER="]) {
+      if ($timer == "" or ($timer <= 999 and $timer >= 0)) {
+        if ($timer !== $_SESSION["opt_base"]["TIMER="]) {
           $_SESSION["opt_base"]["TIMER="] = $timer;
           $_SESSION["changed"] = True;
-        }   
+        }
       } else {
         $timerErr = _TIMERERR_VAL.$timer;
       }
@@ -163,11 +157,11 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
   if (isset($_POST["single"])) {
     $single = check_input($_POST["single"]);
     if ($single == "default") {
-      $single = "default";
+      $single = "";
     } elseif ($single == "enable") {
-      $single = 1;
+      $single = "1";
     } elseif ($single == "disable") {
-      $single = 0;
+      $single = "0";
     }
     if ($single != $_SESSION["opt_base"]["SINGLE="]) {
       $_SESSION["opt_base"]["SINGLE="] = $single;
@@ -178,11 +172,11 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
   if (isset($_POST["voice"])) {
     $voice = check_input($_POST["voice"]);
     if ($voice == "default") {
-      $voice = "default";
+      $voice = "";
     } elseif ($voice == "enable") {
-      $voice = 1;
+      $voice = "1";
     } elseif ($voice == "disable") {
-      $voice = 0;
+      $voice = "0";
     }
 
     if ($voice != $_SESSION["opt_base"]["VOICE="]) {
@@ -193,18 +187,19 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
   // Make the options string and send it to the DMR server
   if ($_SESSION["changed"] and !$ts1Err and !$ts2Err and !$timerErr) {
     $final_opt = "";
+
     foreach ($_SESSION["opt_base"] as $key=>$value) {
       if (gettype($value) == "array") {
-        if (count($value) == 0) {
+        if (count($value) < 1) {
           continue;
-        } else {
+        } else {f
           $value = implode(",", $value);
         }
 
       } else {
-        if ($value == "default") {
+        if (strlen($value) < 1) {
           continue;
-        } 
+        }
       }
       $final_opt .= $key.$value.";";
     }
@@ -234,7 +229,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 </head>
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
-  <h2><?= REPORT_NAME;?></h2>
+  <h2><?=REPORT_NAME?></h2>
   <div><?php include_once "buttons.php"; ?></div>
   <fieldset class="selfserv" >
     <legend><b>&nbsp;.: Self Service :.&nbsp;</b></legend>
@@ -251,7 +246,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       </select>
     </form>
 
-    <!-- Options form -->        
+    <!-- Options form -->
     <form action="form.php" method="post">
       <!-- TS1 -->
       <?php if(in_array($_SESSION["hs_avail"][$_SESSION["opt_owner"]][1], array(1,3))){include_once "selfserv/ts1.php";}?>
@@ -259,29 +254,29 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       <?php if(in_array($_SESSION["hs_avail"][$_SESSION["opt_owner"]][1], array(2,3,4))){include_once "selfserv/ts2.php";}?>
       <!-- Timer -->
       <h3>Timer: <span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?=_TIMER_INFO?></span></span></h3>
-      <div class="actual"><?=_ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["TIMER="]=="default"){echo _DEFAULT_STS;}else{echo $_SESSION["opt_base"]["TIMER="]._MINUTES;} ?></span></div>
-      <input type="text" name="timer" pattern="[0-9\s]+" value="<?php if($_SESSION["opt_base"]["TIMER="] == "default"){echo "";}else{echo $_SESSION["opt_base"]["TIMER="];} ?>" title="<?=_TIMER_PATT?>">
+      <div class="actual"><?=_ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["TIMER="]===""){echo _DEFAULT_STS;}else{echo $_SESSION["opt_base"]["TIMER="]._MINUTES;} ?></span></div>
+      <input type="text" name="timer" pattern="[0-9\s]+" value="<?php if($_SESSION["opt_base"]["TIMER="] === ""){echo "";}else{echo $_SESSION["opt_base"]["TIMER="];} ?>" title="<?=_TIMER_PATT?>">
       <p class="error"><?=$timerErr?></p>
       <!-- Single mode -->
       <h3>Single:</h3>
-      <div class="actual"><?=_ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["SINGLE="]=="default"){echo _DEFAULT_STS;}elseif($_SESSION["opt_base"]["SINGLE="]){echo _ENABLED;}else{echo _DISABLED;}?></span></div>
+      <div class="actual"><?=_ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["SINGLE="]==""){echo _DEFAULT_STS;}elseif($_SESSION["opt_base"]["SINGLE="]=="1"){echo _ENABLED;}else{echo _DISABLED;}?></span></div>
       <select name="single" >
-        <option value="default" <?php if($_SESSION["opt_base"]["SINGLE="]=="default"){echo "selected";}?>> <?=_DEFAULT?> </option>
-        <option value="enable" <?php if($_SESSION["opt_base"]["SINGLE="]==1){echo "selected";}?>><?=_ENABLE?></option>
-        <option value="disable" <?php if($_SESSION["opt_base"]["SINGLE="]==0){echo "selected";}?>><?=_DISABLE?></option>
+        <option value="default" <?php if($_SESSION["opt_base"]["SINGLE="]==""){echo "selected";}?>> <?=_DEFAULT?> </option>
+        <option value="enable" <?php if($_SESSION["opt_base"]["SINGLE="]=="1"){echo "selected";}?>><?=_ENABLE?></option>
+        <option value="disable" <?php if($_SESSION["opt_base"]["SINGLE="]=="0"){echo "selected";}?>><?=_DISABLE?></option>
       </select>
       <!-- Voice announcements -->
       <h3>Beacon Voice Announcements</h3>
-      <div class="actual"><?=_ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["VOICE="]=="default"){echo _DEFAULT_STS;} elseif($_SESSION["opt_base"]["VOICE="]){echo _ENABLED;}else{echo _DISABLED;}?></span></div>
+      <div class="actual"><?=_ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["VOICE="]==""){echo _DEFAULT_STS;}elseif($_SESSION["opt_base"]["VOICE="]=="1"){echo _ENABLED;}else{echo _DISABLED;}?></span></div>
       <select name="voice" >
-        <option value="default" <?php if($_SESSION["opt_base"]["VOICE="]=="default"){echo "selected";}?>><?=_DEFAULT?></option>
-        <option value="enable" <?php if($_SESSION["opt_base"]["VOICE="]==1){echo "selected";}?>><?=_ENABLE?></option>
-        <option value="disable" <?php if($_SESSION["opt_base"]["VOICE="]==0){echo "selected";}?>><?=_DISABLE?></option>
+        <option value="default" <?php if($_SESSION["opt_base"]["VOICE="]==""){echo "selected";}?>><?=_DEFAULT?></option>
+        <option value="enable" <?php if($_SESSION["opt_base"]["VOICE="]=="1"){echo "selected";}?>><?=_ENABLE?></option>
+        <option value="disable" <?php if($_SESSION["opt_base"]["VOICE="]=="0"){echo "selected";}?>><?=_DISABLE?></option>
       </select>
       <div class="<?=$class?>"><b><?=$status?></b></div>
       <input class="form-button" type="submit" value="<?=_SUBMIT?>">
     </form>
-      
+
   </fieldset>
   <footer>
     <p>
