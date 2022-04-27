@@ -3,8 +3,8 @@
 header("Content-type: text/css");
 include_once '../include/config.php';
 ?>
-.link { <?= THEME_COLOR; ?> }
-.dropbtn { <?= THEME_COLOR; ?> }
+.link { <?= THEME_COLOR ?> }
+.dropbtn { <?= THEME_COLOR ?> }
 
 table, td, th {
   border: 0.8px solid #d0d0d0; 
@@ -13,7 +13,7 @@ table, td, th {
   border-collapse: collapse;
 }
 th {
-  <?= THEME_COLOR."\n"; ?>
+  <?= THEME_COLOR."\n" ?>
 }
 
 #log {
@@ -34,7 +34,7 @@ table.active-qso {
   border-collapse: separate;
 }
 .active-qso th {
-  <?= THEME_COLOR."\n"; ?>
+  <?= THEME_COLOR."\n" ?>
   border-radius: 10px;
   font-size : 9pt;
   font-weight: bold;
@@ -42,7 +42,7 @@ table.active-qso {
 }
 .active-qso td {
   line-height: 1.3em;
-  height: <?= HEIGHT_ACTIVITY.";\n"; ?>
+  height: <?= HEIGHT_ACTIVITY.";\n" ?>
   border-radius: 10px;
   border: 1px solid LightGrey;
   background-color: #f9f9f9f9;
@@ -112,6 +112,7 @@ table.log {
   background-image: linear-gradient(to bottom, #e9e9e9 50%, #bcbaba 100%);
   border: 1px solid LightGrey;
   border-radius: 10px;
+
 }
 .conn2srv .tittle {
   margin-left: 7px;
@@ -199,10 +200,10 @@ a:active {
   visibility: visible;
 }
 a.button {
-  <?= THEME_COLOR."\n"; ?>
+  <?= THEME_COLOR."\n" ?>
   text-shadow: none;
   border: none;
-  padding: 8px;
+  padding: 8px 10px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
@@ -218,13 +219,13 @@ a.button {
 
 .dropbtn {
   border: none;
-  padding: 8px;
+  padding: 8px 10px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
   font-size: 14px;
   font-weight: 500;
-  margin: 4px 2px;
+  margin: 7px 3px;
   border-radius: 8px;
   box-shadow: 0px 8px 10px rgba(0,0,0,0.1);
 }
@@ -290,6 +291,7 @@ fieldset {
   border-radius: 10px;
   margin: 10px auto;
 }
+
 fieldset.big{
   width: 1100;
 }
@@ -302,6 +304,7 @@ fieldset.small {
 legend {
   margin-left: 20px;
   text-align: left;
+  padding: 0 10px;
 }
 
 /* Waiting for server data tabble */
@@ -330,6 +333,9 @@ table.opb {
 .opb .th1wd {width: 12%;}
 .opb .th2wd {width: 12%;}
 .opb .th3wd {width: 70%;}
+
+/* sysinfo page */
+.images img {display: block; padding-bottom: 10px; margin-left: auto; margin-right: auto; }
 
 .bkgnd-1d1 {background: #1d1;}
 .bkgnd-8ecfb4 {background-color: #8ecfb4;}
