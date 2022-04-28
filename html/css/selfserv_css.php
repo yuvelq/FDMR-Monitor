@@ -7,8 +7,9 @@ fieldset.selfserv {
   font-size: 11pt;
   width: 800px;
   height: auto;
-  margin: auto;
+  margin: 10px auto;
   text-align: center;
+  background-color: #e6e6e6;
 }
 .selfserv h3 {
   margin-bottom: 6px;

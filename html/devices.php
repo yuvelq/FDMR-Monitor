@@ -1,10 +1,29 @@
 <?php
 session_start();
 include_once "include/config.php";
+include_once "selfserv/functions.php";
+// Open database connection
+check_db();
 
-if (!isset($_SESSION["auth"]) or !$_SESSION["auth"]) {
+// Verify session and refresh data if session has more than 5 minutes
+if (!isset($_SESSION["auth"]) or !$_SESSION["auth"] or $_SESSION["origin"] != "login.php") {
   header("Location: login.php");
   exit();
+} else {
+  if (isset($_SESSION["time_ref"]) and (time()-$_SESSION["time_ref"]) > 300 and isset($_SESSION["w_dmr_id"]) and isset($_SESSION["h_psswd"])) {
+    $stmt = mysqli_prepare($db_conn, "SELECT int_id, options, mode FROM Clients
+      WHERE int_id LIKE ? AND psswd = ? AND logged_in = True AND opt_rcvd = False");
+    $stmt -> bind_param("ss", $_SESSION["w_dmr_id"], $_SESSION["h_psswd"]);
+    $stmt -> execute();
+    $result = $stmt -> get_result();
+    if ($result -> num_rows > 0) {
+      $hs_avail = array();
+      while($row = $result -> fetch_assoc()) {
+        $hs_avail[$row["int_id"]] = array($row["options"], $row["mode"]);
+      }
+      $_SESSION["time_ref"] = time();
+    }
+  }
 }
 
 // Set Language variable
@@ -34,10 +53,10 @@ if (isset($_SESSION["lang"])) {
 </head>
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
-  <h2><?= REPORT_NAME;?></h2>
+  <h2><?php echo REPORT_NAME; ?></h2>
   <div><?php include_once "buttons.php"; ?></div>
   <fieldset class="selfserv">
-    <legend><b>&nbsp;.: Self Service :.&nbsp;</b></legend>
+    <legend><b>.: Self Service :.</b></legend>
     <script>
     function changeLang(){
       document.getElementById("form_lang").submit();

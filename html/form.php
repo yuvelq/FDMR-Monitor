@@ -2,7 +2,7 @@
 session_start();
 include_once "include/config.php";
 include_once "selfserv/functions.php";
-// Check database connection
+// Open database connection
 check_db();
 
 // Define session owner
@@ -15,8 +15,8 @@ if (isset($_SESSION["time_ref"])){
 }
 
 if (!isset($_SESSION["auth"]) or !array_key_exists($_SESSION["opt_owner"], $_SESSION["hs_avail"])
-      or !$_SESSION["auth"] or $delta_time > 1500){
-  if (isset($_SESSION["origin"])){
+      or !$_SESSION["auth"] or $delta_time > 1500) {
+  if (isset($_SESSION["origin"])) {
     header("Location: ".$_SESSION["origin"]);
   } elseif (defined("PRIVATE_NETWORK") and PRIVATE_NETWORK) {
     header("Location: login.php");
@@ -232,7 +232,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
   <h2><?=REPORT_NAME?></h2>
   <div><?php include_once "buttons.php"; ?></div>
   <fieldset class="selfserv" >
-    <legend><b>&nbsp;.: Self Service :.&nbsp;</b></legend>
+    <legend><b>.: Self Service :.</b></legend>
     <!-- Language -->
     <script>
     function changeLang(){

@@ -2,7 +2,7 @@
 session_start();
 include_once "include/config.php";
 include_once "selfserv/functions.php";
-// Check database connection
+// Open database connection
 check_db();
 
 // Redirect to login page

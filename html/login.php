@@ -2,7 +2,7 @@
 session_start();
 include_once "include/config.php";
 include_once "selfserv/functions.php";
-// Check database connection
+// Open database connection
 check_db();
 
 // Set Language variable
@@ -55,6 +55,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       }
       // Set Session variables
       $_SESSION["auth"] = True;
+      $_SESSION["w_dmr_id"] = $w_dmr_id;
+      $_SESSION["h_psswd"] = $h_psswd;
       $_SESSION["time_ref"] = time();
       $_SESSION["hs_avail"] = $hs_avail;
       $_SESSION["changed"] = False;
