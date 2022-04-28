@@ -12,7 +12,7 @@
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
   <h2><?php echo REPORT_NAME; ?></h2>
-  <div><?php include_once 'buttons.html'; ?></div>
+  <div><?php include_once 'buttons.php'; ?></div>
 
   <fieldset class="med">
     <legend><b>.: System Info :.</b></legend>
