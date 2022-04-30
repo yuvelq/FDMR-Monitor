@@ -15,6 +15,7 @@ fieldset.selfserv {
   margin-bottom: 6px;
   color: #193d67;
 }
+
 /* actual selection */
 .selfserv .actual {
 border: 0.5px solid grey;
@@ -32,6 +33,12 @@ background-color: #d7e6f4;
   color: navy;
 }
 /* Form button */
+.selfserv .opt-ttl {
+  text-align: center; 
+  text-decoration: underline; 
+  font-weight: bold;
+  font-size: 1.4em;
+}
 .selfserv .form-button {
   <?= THEME_COLOR."\n"; ?>
   background-image: linear-gradient(to bottom, #337ab7 0%, #265a88 100%);

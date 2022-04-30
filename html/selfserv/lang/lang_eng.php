@@ -5,6 +5,7 @@ define("_NOT_LOGGED", "There are no devices logged into the DMR server with IP: 
 define("_INVALID_IP", "The IP is not valid, try again later.");
 define("_SELECT_LANG", "Language: ");
 // Form page
+define("_OPTS", "Options: ");
 define("_ACTUAL_SELECTION", "Actual selection: ");
 define("_STATIC_TGINFO", "Enter the number of the static TG, for multiple TGs separe them with commas e.g. 91, 914, etc.");
 define("_TSERR_ONLY", "Enter numbers, commas and white spaces.");

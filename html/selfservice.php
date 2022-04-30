@@ -29,28 +29,32 @@ if (isset($_SESSION["lang"])) {
 if ($_SERVER["REQUEST_METHOD"] == "GET") {
   $client_addr = $_SERVER["REMOTE_ADDR"];
   if ($client_addr) {
-    $stmt = mysqli_prepare($db_conn, "SELECT int_id, options, mode FROM Clients WHERE host = ? and logged_in=True and opt_rcvd = False");
-    $stmt->bind_param("s", $client_addr);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result->num_rows > 0) {
-      $hs_avail = array();
-      while ($row = $result->fetch_assoc()) {
-        $hs_avail[$row["int_id"]] = array($row["options"], $row["mode"]);								
-      }
-      $_SESSION["auth"] = True;
-      $_SESSION["time_ref"] = time();
-      $_SESSION["client_addr"] = $client_addr;
-      $_SESSION["hs_avail"] = $hs_avail;
-      $_SESSION["changed"] = False;
-      $_SESSION["origin"] = "selfservice.php";
+    if (!isset($_SESSION["time_ref"], $_SESSION["hs_avail"], $_SESSION["time_ref"]) or time()-$_SESSION["time_ref"] > 0.5
+        or $_SESSION["origin"] != "selfservice.php") {
+      $stmt = mysqli_prepare($db_conn, "SELECT int_id, options, mode FROM Clients WHERE host = ? and logged_in=True and opt_rcvd = False");
+      $stmt->bind_param("s", $client_addr);
+      $stmt->execute();
+      $result = $stmt->get_result();
 
+      if ($result->num_rows > 0) {
+        $hs_avail = array();
+        while ($row = $result->fetch_assoc()) {
+          $hs_avail[$row["int_id"]] = array($row["options"], $row["mode"]);								
+        }
+        $_SESSION["auth"] = True;
+        $_SESSION["time_ref"] = time();
+        $_SESSION["client_addr"] = $client_addr;
+        $_SESSION["hs_avail"] = $hs_avail;
+        $_SESSION["origin"] = "selfservice.php";
+      }
+    }
+
+    if (isset($_SESSION["hs_avail"]) and $_SESSION["origin"] == "selfservice.php") {
       $show_array = array("<b>"._SELECT_DEVICE."</b>");
-      foreach ($hs_avail as $k=>$val) {
+      foreach ($_SESSION["hs_avail"] as $k=>$val) {
         array_push($show_array, '<a href="form.php?dmr_id='.$k.'"> '.$k.' </a>');
       }
       $data2show = implode("<br>", $show_array);
-
     } else {
       $data2show = _NOT_LOGGED.$client_addr.".";
     }
@@ -64,7 +68,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FDMR Server - Monitor</title>
+  <title>FDMR Monitor - SelfService</title>
   <link rel="stylesheet" type="text/css" href="css/styles.php">
   <link rel="stylesheet" type="text/css" href="css/selfserv_css.php">
   <meta name="description" content="Copyright (c) 2016-22.The Regents of the K0USY Group. All rights reserved. Version OA4DOA 2022 (v200422)">
@@ -74,7 +78,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
   <h2><?= REPORT_NAME;?></h2>
   <div><?php include_once "buttons.php"; ?></div>
   <fieldset class="selfserv">
-    <legend><b>&nbsp;.: Self Service :.&nbsp;</b></legend>
+    <legend><b>.: Self Service :.</b></legend>
     <script>
     function changeLang(){
       document.getElementById("form_lang").submit();

@@ -59,8 +59,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       $_SESSION["h_psswd"] = $h_psswd;
       $_SESSION["time_ref"] = time();
       $_SESSION["hs_avail"] = $hs_avail;
-      $_SESSION["changed"] = False;
-      $_SESSION["origin"] = "login.php";
+      $_SESSION["origin"] = "devices.php";
       header("Location: devices.php");
     } else {
       $loginErr = _LOGINERR;
@@ -73,7 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FDMR Server - Monitor</title>
+  <title>FDMR Monitor - Login</title>
   <link rel="stylesheet" type="text/css" href="css/styles.php">
   <link rel="stylesheet" type="text/css" href="css/selfserv_css.php">
   <meta name="description" content="Copyright (c) 2016-22.The Regents of the K0USY Group. All rights reserved. Version OA4DOA 2022 (v230422)">
@@ -83,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <h2><?= REPORT_NAME;?></h2>
   <div><?php include_once "buttons.php"; ?></div>
   <fieldset class="login selfserv">
-    <legend><b>&nbsp;.: Login Form :.&nbsp;</b></legend>
+    <legend><b>.: Login :.</b></legend>
     <script>
     function changeLang(){
       document.getElementById("form_lang").submit();

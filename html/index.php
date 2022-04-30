@@ -1,10 +1,13 @@
-<?php include_once 'include/config.php'; ?>
+<?php 
+include_once 'include/config.php';
+session_start();
+?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FDMR Monitor - STATUS</title>
+  <title>FDMR Monitor - Status</title>
   <script src="scripts/hbmon.js"></script>
   <link rel="stylesheet" type="text/css" href="css/styles.php">
   <meta name="description" content="Copyright (c) 2016-22.The Regents of the K0USY Group. All rights reserved. Version OA4DOA 2022 (v270422)">

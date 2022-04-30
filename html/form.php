@@ -10,16 +10,12 @@ if (isset($_GET["dmr_id"])){
   $_SESSION["opt_owner"] = $_GET["dmr_id"];
 }
 
-if (isset($_SESSION["time_ref"])){
-  $delta_time = time() - $_SESSION["time_ref"];
-}
-
-if (!isset($_SESSION["auth"]) or !array_key_exists($_SESSION["opt_owner"], $_SESSION["hs_avail"])
-      or !$_SESSION["auth"] or $delta_time > 1500) {
+if (!isset($_SESSION["auth"], $_SESSION["time_ref"]) or !array_key_exists($_SESSION["opt_owner"], $_SESSION["hs_avail"])
+      or !$_SESSION["auth"] or time() - $_SESSION["time_ref"] > 1800) {
   if (isset($_SESSION["origin"])) {
     header("Location: ".$_SESSION["origin"]);
   } elseif (defined("PRIVATE_NETWORK") and PRIVATE_NETWORK) {
-    header("Location: login.php");
+    header("Location: devices.php");
   } else {
     header("Location: selfservice.php");
   }
@@ -40,9 +36,10 @@ if (isset($_SESSION["lang"])) {
   include "selfserv/lang/lang_eng.php";
 }
 
-// set variables
+// Set variables
 $ts1 = $aod_ts1 = $ts2 = $aod_ts2 = $timer = $single = $voice = $status = $class = "";
 $ts1Err = $ts2Err = $timerErr = "";
+$_SESSION["changed"] = False;
 
 if ($_SERVER["REQUEST_METHOD"] == "GET") {
   // Declare default values for options
@@ -211,7 +208,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       $class = "status-succes";
     } else {
       $status = _DATA_UPDT_ERR;
-      $class = "txt-error";
+      $class = "status-error";
     }
     $_SESSION["changed"] = False;
   }
@@ -222,7 +219,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FDMR Server - Monitor</title>
+  <title>FDMR Monitor - Options</title>
   <link rel="stylesheet" type="text/css" href="css/styles.php">
   <link rel="stylesheet" type="text/css" href="css/selfserv_css.php">
   <meta name="description" content="Copyright (c) 2016-22.The Regents of the K0USY Group. All rights reserved. Version OA4DOA 2022 (v230422)">
@@ -232,7 +229,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
   <h2><?=REPORT_NAME?></h2>
   <div><?php include_once "buttons.php"; ?></div>
   <fieldset class="selfserv" >
-    <legend><b>.: Self Service :.</b></legend>
+    <legend><b>.: Options form :.</b></legend>
     <!-- Language -->
     <script>
     function changeLang(){
@@ -245,7 +242,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       <option value="esp" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "esp"){ echo "selected"; } ?> >Español</option>
       </select>
     </form>
-
+    <h3 class="opt-ttl"><?php echo _OPTS.$_SESSION["opt_owner"]; ?></h3>
     <!-- Options form -->
     <form action="form.php" method="post">
       <!-- TS1 -->

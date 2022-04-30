@@ -1,4 +1,7 @@
-<?php include_once 'include/config.php'; ?>
+<?php
+include_once 'include/config.php';
+session_start()
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -11,14 +14,14 @@
 </head>
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
-  <h2><?php echo REPORT_NAME;?></h2>
+  <h2><?php echo REPORT_NAME; ?></h2>
   <div><?php include_once 'buttons.php'; ?></div>
   <noscript>You must enable JavaScript</noscript>
   <!-- Linked systems table -->
   <p id="lnksys"></p>
   <footer>
     <p>
-      Copyright (c) 2016-2021<br>
+      Copyright (c) 2016-2022<br>
       The Regents of the <a target="_blank" href=http://k0usy.mystrikingly.com >K0USY Group</a>. All rights reserved.<br>
       <a title="FDMR Monitor OA4DOA v270422" target="_blank" href=https://github.com/yuvelq/FDMR-Monitor.git>Version OA4DOA 2022</a>
       <!-- Credits: SP2ONG 2019-2022 -->

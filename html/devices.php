@@ -6,11 +6,11 @@ include_once "selfserv/functions.php";
 check_db();
 
 // Verify session and refresh data if session has more than 5 minutes
-if (!isset($_SESSION["auth"]) or !$_SESSION["auth"] or $_SESSION["origin"] != "login.php") {
+if (!isset($_SESSION["auth"]) or !$_SESSION["auth"]) {
   header("Location: login.php");
   exit();
 } else {
-  if (isset($_SESSION["time_ref"]) and (time()-$_SESSION["time_ref"]) > 300 and isset($_SESSION["w_dmr_id"]) and isset($_SESSION["h_psswd"])) {
+  if (isset($_SESSION["time_ref"], $_SESSION["w_dmr_id"], $_SESSION["h_psswd"]) and time()-$_SESSION["time_ref"] > 0.5) {
     $stmt = mysqli_prepare($db_conn, "SELECT int_id, options, mode FROM Clients
       WHERE int_id LIKE ? AND psswd = ? AND logged_in = True AND opt_rcvd = False");
     $stmt -> bind_param("ss", $_SESSION["w_dmr_id"], $_SESSION["h_psswd"]);
@@ -21,6 +21,7 @@ if (!isset($_SESSION["auth"]) or !$_SESSION["auth"] or $_SESSION["origin"] != "l
       while($row = $result -> fetch_assoc()) {
         $hs_avail[$row["int_id"]] = array($row["options"], $row["mode"]);
       }
+      $_SESSION["hs_avail"] = $hs_avail;
       $_SESSION["time_ref"] = time();
     }
   }
@@ -46,7 +47,7 @@ if (isset($_SESSION["lang"])) {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FDMR Server - Monitor</title>
+  <title>FDMR Monitor - Devices</title>
   <link rel="stylesheet" type="text/css" href="css/styles.php">
   <link rel="stylesheet" type="text/css" href="css/selfserv_css.php">
   <meta name="description" content="Copyright (c) 2016-22.The Regents of the K0USY Group. All rights reserved. Version OA4DOA 2022 (v230422)">
@@ -56,7 +57,7 @@ if (isset($_SESSION["lang"])) {
   <h2><?php echo REPORT_NAME; ?></h2>
   <div><?php include_once "buttons.php"; ?></div>
   <fieldset class="selfserv">
-    <legend><b>.: Self Service :.</b></legend>
+    <legend><b>.: Devices :.</b></legend>
     <script>
     function changeLang(){
       document.getElementById("form_lang").submit();

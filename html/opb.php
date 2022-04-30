@@ -1,4 +1,7 @@
-<?php include_once 'include/config.php'; ?>
+<?php
+include_once 'include/config.php';
+session_start()
+?>
 
 <!DOCTYPE html>
 <html lang="en">

@@ -5,12 +5,13 @@ define("_NOT_LOGGED", "No se econtraron dispositivos en el servidor DMR con IP: 
 define("_INVALID_IP", "IP no valida, vuelve a intentar después.");
 define("_SELECT_LANG", "Idioma: ");
 // Form page
+define("_OPTS", "Opciones: ");
 define("_ACTUAL_SELECTION", "Selección actual: ");
 define("_STATIC_TGINFO", "Ingresa el número de TG estático, para múltiples TG utiliza comas ej. 91, 914, etc.");
 define("_TSERR_ONLY", "Ingresa solo números, comas y espacios en blanco.");
 define("_TIMERERR_VAL", "Valor fuera de rango: ");
 define("_TIMER_PATT", "Ingresa números o espacio en blanco.");
-define("_TIMER_INFO", "Ingresa un valor entre 1 y 999, para dejar el valor por defecto deja el espacio en blanco.");
+define("_TIMER_INFO", "Ingresa un valor entre 1 y 999, para seleccionar por defecto, deja el espacio en blanco.");
 define("_MINUTES", " minutos.");
 define("_ADD", "Agregar");
 define("_DELETE", "Remover");

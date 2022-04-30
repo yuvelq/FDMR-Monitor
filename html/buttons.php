@@ -3,17 +3,28 @@
 
 <a class="button" href="linkedsys.php">Linked Systems</a>
 
-<a class="button" href="opb.php">OpenBridge</a>
-
 <a class="button" href="statictg.php">Static TG</a>
 
-<a class="button" href="moni.php">Monitor</a>
+<a class="button" href="opb.php">OpenBridge</a>
+
+<div class="dropdown">
+  <button class="dropbtn">Self Service</button>
+  <div class="dropdown-content">
+    <?php if(!PRIVATE_NETWORK){echo '<a href="selfservice.php">SelfService</a>';} ?>
+    <a href="login.php">Login</a>
+    <?php 
+    if(isset($_SESSION["auth"], $_SESSION["w_dmr_id"], $_SESSION["h_psswd"]) and $_SESSION["auth"]){
+      echo '<a href="devices.php">Devices</a>';
+    }
+    ?>
+  </div>
+</div>
 
 <a class="button" href="sysinfo.php">System Info</a>
 
 <a class="button" href="log.php">Lastheard</a>
 
-<a class="button" href="<?php if(PRIVATE_NETWORK){echo 'login.php';}else{echo 'selfservice.php';} ?>">Self Service</a>
+<a class="button" href="moni.php">Monitor</a>
 
 <a class="button" href="info.php">Info</a>
 
