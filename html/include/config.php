@@ -42,7 +42,7 @@ define("THEME_COLOR","background-image: linear-gradient(to bottom, #337ab7 0%, #
 //    Self Service     //
 // IMPORTANT: set this to False only if the server is not running on a private network, 
 // if you are in doubt leave this as it is.
-define("PRIVATE_NETWORK", False);
+define("PRIVATE_NETWORK", True);
 
 /* Database credentials. Assuming you are running MySQL
 server with default setting (user 'root' with no password) */

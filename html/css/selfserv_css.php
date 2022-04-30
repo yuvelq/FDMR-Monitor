@@ -63,7 +63,7 @@ background-color: #d7e6f4;
 
 /* Show data in Self Service page */
 .selfserv .show-data {
-  line-height: 1.6em;
+  line-height: 1.3em;
   margin: 15px auto;
   padding: 20px 30px;
   background: #f2f2f2;
