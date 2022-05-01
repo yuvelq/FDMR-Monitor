@@ -44,10 +44,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $stmt = mysqli_prepare($db_conn, "SELECT int_id, options, mode FROM Clients
       WHERE int_id LIKE ? AND psswd = ? AND logged_in = True AND opt_rcvd = False");
-    $stmt -> bind_param("ss",$w_dmr_id, $h_psswd);
+    $stmt -> bind_param("ss", $w_dmr_id, $h_psswd);
     $stmt -> execute();
     $result = $stmt -> get_result();
-    var_dump($result);
     if ($result->num_rows > 0) {
       $hs_avail = array();
       while($row = $result -> fetch_assoc()) {
