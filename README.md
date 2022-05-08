@@ -8,7 +8,7 @@ Some of the changes in FDMR Monitor:
 - JavaScript code to support broadcasting groups.
 - The code has been updated to HTML5.
 - Page that shows static and single TG.
-- Data qso are showed in the dashboard.
+- Data qso now is showed in the dashboard.
 
 
 FDMR Monitor has been tested on Debian v9, v10 and v11
