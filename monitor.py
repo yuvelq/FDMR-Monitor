@@ -75,6 +75,8 @@ OPCODE = {
     }
 
 # Global Variables:
+# Number of rows showed on the lastheard log page
+LASTHEARD_LOG_ROWS = 70
 CONFIG      = {}
 CTABLE      = {'MASTERS': {}, 'PEERS': {}, 'OPENBRIDGES': {}, 'SETUP': {}}
 BRIDGES     = {}
@@ -83,17 +85,15 @@ BRIDGES_RX  = ''
 CONFIG_RX   = ''
 LOGBUF      = deque(100*[''], 100)
 
-GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'lnksys': {}, 'opb': {}, 'statictg':{},
-     'log':{}, 'lsthrd_log':{}}
+GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'lnksys': {}, 'opb': {},
+            'statictg':{}, 'log':{}, 'lsthrd_log':{}}
 
-# DEVELOPEMENT
 peer_ids = {}
 subscriber_ids = {}
 talkgroup_ids = {}
 not_in_db = []
 # Store active queries
 act_query = []
-
 
 # Define setup setings
 CTABLE['SETUP']['LASTHEARD'] = LASTHEARD_INC
@@ -663,7 +663,7 @@ def build_stats():
         active_groups = [group for group, value in GROUPS.items() if value]
         if CONFIG:
             if 'main' in active_groups:
-                render_fromdb("last_heard", 20)
+                render_fromdb("last_heard", LASTHEARD_ROWS)
             if 'lnksys' in active_groups:
                 lnksys = 'c' + ctemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)
                 dashboard_server.broadcast(lnksys, 'lnksys')
@@ -674,7 +674,7 @@ def build_stats():
                 statictg = 's' + stemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)
                 dashboard_server.broadcast(statictg, 'statictg')
             if 'lsthrd_log' in active_groups:
-                render_fromdb("lstheard_log", 70)
+                render_fromdb("lstheard_log", LASTHEARD_LOG_ROWS)
 
         if BRIDGES and BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
             if 'bridge' in active_groups:
@@ -888,11 +888,12 @@ def process_message(_bmessage):
                 if p[1] == 'END':
                     start_sys = 0
                     for x in sys_list:
-                        if x[0]== p[3] and x[1] == p[4]:
+                        if x[0] == p[3] and x[1] == p[4]:
                             sys_list.remove(x)
                             start_sys=1
                             break
-                if p[1] == 'END' and start_sys==1:
+
+                if p[1] == 'END' and start_sys == 1:
                     log_message = f'{_now[10:19]} {p[0][6:]} {p[1]}   SYS: {p[3]:8.8s} SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: {p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s} Time: {int(float(p[9]))}s'
                     # log only to file if system is NOT OpenBridge event (not logging open bridge system, name depends on your OB definitions) AND transmit time is LONGER as 2sec (make sense for very short transmits)
                     if LASTHEARD_INC:
@@ -902,17 +903,6 @@ def process_message(_bmessage):
                         if int(float(p[9])) > 2:
                             # Insert voice qso into lstheard DB table
                             db_conn.ins_lstheard(p[9], p[0], p[3], p[8], p[6])
-
-                            # DATA A ELIMINAR
-                            # lsthrd_msg = [_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), "subscriber_ids"), p[7], p[8], alias_tgid(int(p[8]),
-                            #         "talkgroup_ids"), p[6], alias_short(int(p[6]), "subscriber_ids").split(',')]
-                            # lsthrd_log.appendleft(lsthrd_msg)
-                            # for item in lsthrd:
-                            #     if p[6] == item[10]:
-                            #         lsthrd.remove(item)
-                            #         break
-                            # lsthrd.appendleft(lsthrd_msg)
-
                     # End of Lastheard
                     # Removing obsolete entries from the sys_list (3 sec)
                     for item in list(sys_list):
@@ -937,23 +927,10 @@ def process_message(_bmessage):
                 LOGBUF.append(log_message)
 
         elif p[0] == 'UNIT DATA HEADER' and p[2] != 'TX' and p[5] not in opbfilter:
-
-            # PARA BORRAR
-            # for item in lsthrd:
-            #     if p[6] == item[10]:
-            #         lsthrd.remove(item)
-            #         break
-
             # Insert data qso into lstheard DB table
             db_conn.ins_lstheard(None, p[0], p[3], p[8], p[6])
             # Insert data qso into lstheard_log DB table
             db_conn.ins_lstheard_log(None, p[0], p[3], p[8], p[6])
-
-            # PARA BORRAR
-            # lsthrd_msg = [_now, 'DATA', p[0], p[1], p[3], p[5], alias_call(int(p[5]), "subscriber_ids"), p[7], p[8], alias_tgid(int(p[8]),
-            #      "talkgroup_ids"), p[6], alias_short(int(p[6]), "subscriber_ids").split(',')]
-            # for dq in (lsthrd, lsthrd_log):
-            #     dq.appendleft(lsthrd_msg)
 
         else:
             logger.warning('Unknown log message.')      
@@ -988,7 +965,7 @@ class report(NetstringReceiver):
 
 class reportClientFactory(ReconnectingClientFactory):
     def __init__(self):
-        logger.info('reportClient object for connecting to HBlink.py created at: %s', self)
+        logger.info(f'reportClient object for connecting to HBlink.py created at: {self}')
 
     def startedConnecting(self, connector):
         logger.info('Initiating Connection to Server.')
@@ -1022,17 +999,17 @@ class reportClientFactory(ReconnectingClientFactory):
 class dashboard(WebSocketServerProtocol):
 
     def onConnect(self, request):
-        logger.info('Client connecting: %s', request.peer)
+        logger.info(f'Client connecting: {request.peer}')
 
     def onOpen(self):
         logger.info('WebSocket connection open.')
 
     def onMessage(self, payload, isBinary):
         if isBinary:
-            logger.info('Binary message received: %s bytes', len(payload))
+            logger.info(f'Binary message received: {len(payload)} bytes')
         else:
             msg = payload.decode('utf-8').split(',')
-            logger.info('Text message received: %s', payload)
+            logger.info(f'Text message received: {payload}')
             if msg[0] == 'conf':
                 for group in msg[1:]:
                     if group in GROUPS:
@@ -1045,13 +1022,11 @@ class dashboard(WebSocketServerProtocol):
                         elif group == 'opb':
                             self.sendMessage(('o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
                         elif group == 'main':
-                            render_fromdb("last_heard", 20, self)
-                            # self.sendMessage(('i' + itemplate.render(_table=CTABLE, lastheard=lsthrd)).encode('utf-8'))
+                            render_fromdb("last_heard", LASTHEARD_ROWS, self)
                         elif group == 'statictg':
                             self.sendMessage(('s' + stemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)).encode('utf-8'))
                         elif group == 'lsthrd_log':
-                            render_fromdb("lstheard_log", 70, self)
-                            # self.sendMessage(('h' + htemplate.render(_table=lsthrd_log)).encode('utf-8'))
+                            render_fromdb("lstheard_log", LASTHEARD_LOG_ROWS, self)
                         elif group == 'log':
                             for _message in LOGBUF:
                                 if _message:
@@ -1091,14 +1066,6 @@ class dashboardFactory(WebSocketServerFactory):
             logger.debug('message sent to %s', client.peer)
 
 
-def file_update():
-    # Download, update files and tables 
-    for file, url, tbl in ((PEER_FILE, PEER_URL, "peer_ids"), (SUBSCRIBER_FILE, SUBSCRIBER_URL, "subscriber_ids"),
-                           (TGID_FILE, TGID_URL, "talkgroup_ids")):
-
-        update_table(PATH, file, url, FILE_RELOAD * 86400, tbl)
-
-
 @inlineCallbacks
 # Show the number of entries in the DB tables
 def count_db_entries():
@@ -1110,6 +1077,20 @@ def count_db_entries():
 
     except Exception as err:
         logger.error(f"count_db_entries: {err}, {type(err)}")
+
+
+def file_update():
+    # Download, update files and tables
+    for file, url, tbl in ((PEER_FILE, PEER_URL, "peer_ids"), (SUBSCRIBER_FILE, SUBSCRIBER_URL, "subscriber_ids"),
+                           (TGID_FILE, TGID_URL, "talkgroup_ids")):
+
+        update_table(PATH, file, url, FILE_RELOAD * 86400, tbl)
+
+
+def cleaning_loop():
+    tbls = (("last_heard", LASTHEARD_ROWS), ("lstheard_log", LASTHEARD_LOG_ROWS))
+    for _table, _row_num in tbls:
+        db_conn.clean_table(_table, _row_num)
 
 
 #######################################################################
@@ -1161,12 +1142,16 @@ if __name__ == '__main__':
 
     # files update loop
     file_loop = task.LoopingCall(file_update)
-    file_loop.start(600).addErrback(error_hdl)
+    file_loop.start(1800).addErrback(error_hdl)
+
+    # Clean DB tables loop
+    cdb_loop = task.LoopingCall(cleaning_loop)
+    cdb_loop.start(900).addErrback(error_hdl)
 
     # Update local files at start
-    update_local()
+    reactor.callLater(3, update_local)
     # Show number of entries in the DB tables
-    reactor.callLater(3, count_db_entries)
+    reactor.callLater(5, count_db_entries)
 
     # Connect to HBlink
     reactor.connectTCP(HBLINK_IP, HBLINK_PORT, reportClientFactory())
