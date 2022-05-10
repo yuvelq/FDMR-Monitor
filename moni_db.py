@@ -1,11 +1,36 @@
-from ast import Num
-from twisted.enterprise import adbapi
-from twisted.internet.defer import inlineCallbacks, returnValue
+#!/usr/bin/env python
+
+###############################################################################
+#   Copyright (C) 2022 Christian Quiroz, OA4DOA <adm@dmr-peru.pe>
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software Foundation,
+#   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+###############################################################################
+
 import logging
 from json import loads as jloads
 
+from twisted.enterprise import adbapi
+from twisted.internet.defer import inlineCallbacks, returnValue
 
-logger = logging.getLogger("hbmon")
+__author__     = 'Christian Quiroz, OA4DOA'
+__copyright__  = 'Copyright (c) 2022 Christian Quiroz, OA4DOA'
+__license__    = 'GNU GPLv3'
+__maintainer__ = 'Christian Quiroz, OA4DOA'
+__email__      = 'adm@dmr-peru.pe'
+
+logger = logging.getLogger("fdmr-mon")
 
 class MoniDB:
     def __init__(self):
@@ -25,7 +50,7 @@ class MoniDB:
                                         name VARCHAR(255) NOT NULL)''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS peer_ids (
-                                        id INT PRIMARY KEY UNIQUE NOT NULL, 
+                                        id INT PRIMARY KEY UNIQUE NOT NULL,
                                         callsign VARCHAR(255) NOT NULL)''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS last_heard (
@@ -46,7 +71,7 @@ class MoniDB:
                                         dmr_id INT NOT NULL)''')
 
             yield self.db.runInteraction(create_tbl)
-            print("Tables created successfully.")
+            logger.info("Tables created successfully.")
 
         except Exception as err:
             logger.error(f"create_tables: {err}, {type(err)}")
@@ -95,7 +120,7 @@ class MoniDB:
     @inlineCallbacks
     def ins_lstheard(self, qso_time, qso_type, system, tg_num, dmr_id):
         try:
-            yield self.db.runOperation("INSERT OR REPLACE INTO last_heard VALUES(datetime('now', 'localtime'), ?, ?, ?, ?, ?)", 
+            yield self.db.runOperation("INSERT OR REPLACE INTO last_heard VALUES(datetime('now', 'localtime'), ?, ?, ?, ?, ?)",
                                        (qso_time, qso_type, system, tg_num, dmr_id))
 
         except Exception as err:
@@ -116,7 +141,7 @@ class MoniDB:
         try:
             if _table == "subscriber_ids":
                 stm = "SELECT * FROM subscriber_ids WHERE id = ?"
-            if _table == "talkgroup_ids":
+            elif _table == "talkgroup_ids":
                 stm = "SELECT * FROM talkgroup_ids WHERE id = ?"
 
             result = yield self.db.runQuery(stm, (_id,))
@@ -136,7 +161,7 @@ class MoniDB:
                         (SELECT callsign FROM talkgroup_ids WHERE id = tg_num), dmr_id,
                         (SELECT json_array(callsign, name) FROM subscriber_ids WHERE id = dmr_id)
                         FROM last_heard ORDER BY date_time DESC LIMIT ?'''
-                
+
             elif _table == "lstheard_log":
                 stm = '''SELECT date_time, qso_time, qso_type, system, tg_num,
                         (SELECT callsign FROM talkgroup_ids WHERE id = tg_num), dmr_id,
@@ -144,7 +169,7 @@ class MoniDB:
                         FROM lstheard_log ORDER BY date_time DESC LIMIT ?'''
 
             result = yield self.db.runQuery(stm, (_row_num,))
-            if result:                
+            if result:
                 tmp_lst = []
                 for row in result:
                     if row[7]:
@@ -164,8 +189,9 @@ class MoniDB:
     def clean_table(self, _table, _row_num):
         try:
             if _table == "last_heard":
-                stm = '''DELETE FROM last_heard WHERE dmr_id NOT IN 
+                stm = '''DELETE FROM last_heard WHERE dmr_id NOT IN
                         (SELECT dmr_id FROM last_heard ORDER BY date_time DESC LIMIT ?)'''
+
             elif _table == "lstheard_log":
                 stm = '''DELETE FROM lstheard_log WHERE id NOT IN
                         (SELECT id FROM lstheard_log ORDER BY date_time DESC LIMIT ?)'''
@@ -179,8 +205,13 @@ class MoniDB:
 
 if __name__ == '__main__':
     from twisted.internet import reactor
+    
+    logging.basicConfig(
+        level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
+    # Create an instance of MoniDB
     test_db = MoniDB()
+
     # Create tables in db
     test_db.create_tables()
 

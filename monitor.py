@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#
+
 ###############################################################################
 #   Copyright (C) 2016-2019  Cortney T. Buffington, N0MJS <n0mjs@me.com>
 #
@@ -19,11 +19,11 @@
 ###############################################################################
 #
 #   Python 3 port by Steve Miller, KC1AWV <smiller@kc1awv.net>
-#
-###############################################################################
-###############################################################################
-#
 #   HBMonitor v2 (2021) Version by Waldek SP2ONG
+#
+###############################################################################
+#
+#  FDMR-Monitor (2021-22) Version by Christian Quiroz OA4DOA <adm@dmr-peru.pe>
 #
 ###############################################################################
 
@@ -32,7 +32,7 @@ import logging
 from pathlib import Path
 
 # Twisted modules
-from twisted.internet.protocol import ReconnectingClientFactory, Protocol
+from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 from twisted.internet.threads import deferToThread
@@ -43,8 +43,7 @@ from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerF
 
 # Specific functions to import from standard modules
 from time import time, strftime, localtime
-from pickle import loads, dump as pkl_dump, load as pkl_load
-from os.path import isfile
+from pickle import loads
 from collections import deque
 
 # Web templating environment
@@ -52,8 +51,8 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 # Utilities from K0USY Group sister project
 from dmr_utils3.utils import int_id, try_download, bytes_4
-from json import load as jload, loads as jloads
-from csv import DictReader as csv_dict_reader, reader as csv_reader
+from json import load as jload
+from csv import DictReader as csv_dict_reader
 
 # Configuration variables and constants
 from config import *
@@ -72,6 +71,7 @@ OPCODE = {
     'BRIDGE_UPD': '\x05',
     'LINK_EVENT': '\x06',
     'BRDG_EVENT': '\x07',
+    'SERVER_MSG': 'b'
     }
 
 # Global Variables:
@@ -124,7 +124,7 @@ def get_template(_file):
 
 
 # LONG VERSION - MAKES A FULL DICTIONARY OF INFORMATION BASED ON TYPE OF ALIAS FILE
-# BASED ON DOWNLOADS FROM RADIOID.NET     
+# BASED ON DOWNLOADS FROM RADIOID.NET
 # moved from dmr_utils3
 def fill_table(_path, _file, _table, wipe_tbl=True):
     temp_lst = []
@@ -139,7 +139,7 @@ def fill_table(_path, _file, _table, wipe_tbl=True):
                     fields = TGID_FIELDS
                 records = csv_dict_reader(_handle, fieldnames=fields, restkey='OTHER', dialect='excel', delimiter=',')
 
-            else:       
+            else:
                 records = jload(_handle)
                 if 'count' in [*records]:
                     records.pop('count')
@@ -329,7 +329,7 @@ def error_hdl(failure):
 
 
 ##################################################
-# Cleaning entries in tables - Timeout (5 min) 
+# Cleaning entries in tables - Timeout (5 min)
 #
 def cleanTE():
     timeout = time()
@@ -368,14 +368,14 @@ def cleanTE():
             if td > 3:
                  del CTABLE['OPENBRIDGES'][system]['STREAMS'][streamId]
 
-                    
+
 def add_hb_peer(_peer_conf, _ctable_loc, _peer):
     _ctable_loc[int_id(_peer)] = {}
     _ctable_peer = _ctable_loc[int_id(_peer)]
 
     # if the Frequency is 000.xxx assume it's not an RF peer, otherwise format the text fields
     # (9 char, but we are just software)  see https://wiki.brandmeister.network/index.php/Homebrew/example/php2
-    
+
     if _peer_conf['TX_FREQ'].strip().isdigit() and _peer_conf['RX_FREQ'].strip().isdigit() and str(type(_peer_conf['TX_FREQ'])).find("bytes") != -1 and str(type(_peer_conf['RX_FREQ'])).find("bytes") != -1:
         if _peer_conf['TX_FREQ'][:3] == b'000' or _peer_conf['TX_FREQ'][:1] == b'0' or _peer_conf['RX_FREQ'][:3] == b'000' or _peer_conf['RX_FREQ'][:1] == b'0':
             _ctable_peer['TX_FREQ'] = 'N/A'
@@ -385,7 +385,7 @@ def add_hb_peer(_peer_conf, _ctable_loc, _peer):
             _ctable_peer['RX_FREQ'] = _peer_conf['RX_FREQ'][:3].decode('utf-8') + '.' + _peer_conf['RX_FREQ'][3:7].decode('utf-8') + ' MHz'
     else:
         _ctable_peer['TX_FREQ'] = 'N/A'
-        _ctable_peer['RX_FREQ'] = 'N/A'      
+        _ctable_peer['RX_FREQ'] = 'N/A'
     # timeslots are kinda complicated too. 0 = none, 1 or 2 mean that one slot, 3 is both, and anything else it considered DMO
     # Slots (0, 1=1, 2=2, 1&2=3 Duplex, 4=Simplex) see https://wiki.brandmeister.network/index.php/Homebrew/example/php2
     
@@ -423,20 +423,20 @@ def add_hb_peer(_peer_conf, _ctable_loc, _peer):
        _ctable_peer['URL'] = _peer_conf['URL'].decode('utf-8').strip()
     else:
        _ctable_peer['URL'] = _peer_conf['URL']
-       
+
     if str(type(_peer_conf['CALLSIGN'])).find("bytes") != -1:
        _ctable_peer['CALLSIGN'] = _peer_conf['CALLSIGN'].decode('utf-8').strip()
     else:
        _ctable_peer['CALLSIGN'] = _peer_conf['CALLSIGN']
-    
+
     if str(type(_peer_conf['COLORCODE'])).find("bytes") != -1:
        _ctable_peer['COLORCODE'] = _peer_conf['COLORCODE'].decode('utf-8').strip()
-    else:    
+    else:
        _ctable_peer['COLORCODE'] = _peer_conf['COLORCODE']
-    
+
     _ctable_peer['CONNECTION'] = _peer_conf['CONNECTION']
     _ctable_peer['CONNECTED'] = time_str(_peer_conf['CONNECTED'], 'since')
-    
+
     _ctable_peer['IP'] = _peer_conf['IP']
     _ctable_peer['PORT'] = _peer_conf['PORT']
     #_ctable_peer['LAST_PING'] = _peer_conf['LAST_PING']
@@ -451,7 +451,7 @@ def add_hb_peer(_peer_conf, _ctable_loc, _peer):
         _ctable_peer[ts]['DEST'] = ''
 
 
-######################################################################
+###############################################################################
 #
 # Build the HBlink connections table
 #
@@ -479,12 +479,12 @@ def build_hblink_table(_config, _stats_table):
                      _stats_table['PEERS'][_hbp]['LOCATION'] = _hbp_data['LOCATION'].decode('utf-8').strip()
                 else:
                      _stats_table['PEERS'][_hbp]['LOCATION'] = _hbp_data['LOCATION']
-                     
+
                 if str(type(_hbp_data['DESCRIPTION'])).find("bytes") != -1:
                      _stats_table['PEERS'][_hbp]['DESCRIPTION'] = _hbp_data['DESCRIPTION'].decode('utf-8').strip()
                 else:
                      _stats_table['PEERS'][_hbp]['DESCRIPTION'] = _hbp_data['DESCRIPTION']
-                     
+
                 if str(type(_hbp_data['URL'])).find("bytes") != -1:
                      _stats_table['PEERS'][_hbp]['URL'] = _hbp_data['DESCRIPTION'].decode('utf-8').strip()
                 else:
@@ -499,7 +499,7 @@ def build_hblink_table(_config, _stats_table):
                 _stats_table['PEERS'][_hbp]['MASTER_IP'] = _hbp_data['MASTER_IP']
                 _stats_table['PEERS'][_hbp]['MASTER_PORT'] = _hbp_data['MASTER_PORT']
                 _stats_table['PEERS'][_hbp]['STATS'] = {}
-                if _stats_table['PEERS'][_hbp]['MODE'] == 'XLXPEER': 
+                if _stats_table['PEERS'][_hbp]['MODE'] == 'XLXPEER':
                     _stats_table['PEERS'][_hbp]['STATS']['CONNECTION'] = _hbp_data['XLXSTATS']['CONNECTION']
                     if _hbp_data['XLXSTATS']['CONNECTION'] == "YES":
                         _stats_table['PEERS'][_hbp]['STATS']['CONNECTED'] = time_str(_hbp_data['XLXSTATS']['CONNECTED'],'since')
@@ -546,7 +546,6 @@ def build_hblink_table(_config, _stats_table):
                 _stats_table['OPENBRIDGES'][_hbp]['TARGET_IP'] = _hbp_data['TARGET_IP']
                 _stats_table['OPENBRIDGES'][_hbp]['TARGET_PORT'] = _hbp_data['TARGET_PORT']
                 _stats_table['OPENBRIDGES'][_hbp]['STREAMS'] = {}
-    #return(_stats_table)
 
 
 def update_hblink_table(_config, _stats_table):
@@ -667,7 +666,7 @@ def build_stats():
             if 'lnksys' in active_groups:
                 lnksys = 'c' + ctemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)
                 dashboard_server.broadcast(lnksys, 'lnksys')
-            if 'opb' in active_groups: 
+            if 'opb' in active_groups:
                 opb = 'o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
                 dashboard_server.broadcast(opb, 'opb')
             if 'statictg' in active_groups:
@@ -715,7 +714,7 @@ def build_tgstats():
         srv_info = 0
         # make a list with occupied systems
         for system in CTABLE['MASTERS']:
-            if not CTABLE['MASTERS'][system]['PEERS']:continue
+            if not CTABLE['MASTERS'][system]['PEERS']: continue
             for peer in CTABLE['MASTERS'][system]['PEERS']:
                 if peer == 4294967295: continue
                 if system not in tmp_dict:
@@ -729,9 +728,9 @@ def build_tgstats():
             if not srv_info and '_default_options' in CONFIG[system]:
                 CTABLE['SERVER']['SINGLE_MODE'] = CONFIG[system]['SINGLE_MODE']
                 for item in CONFIG[system]['_default_options'].split(';')[:2]:
-                    if len(item) > 11 and item[:11] == 'TS1_STATIC=':
+                    if len(item) > 11 and item.startswith('TS1_STATIC='):
                         CTABLE['SERVER']['TS1'] = item[11:].split(',')
-                    if len(item) > 11 and item[:11] == 'TS2_STATIC=':
+                    if len(item) > 11 and item.startswith('TS2_STATIC='):
                         CTABLE['SERVER']['TS2'] = item[11:].split(',')
                 srv_info = 1
             for peer in CTABLE['MASTERS'][system]['PEERS']:
@@ -781,14 +780,12 @@ def rts_update(p):
     timeSlot = int(p[7])
     destination = int(p[8])
     timeout = time()
-    
     if system in CTABLE['MASTERS']:
         for peer in CTABLE['MASTERS'][system]['PEERS']:
             if sourcePeer == peer:
                 crxstatus = "RX"
             else:
                 crxstatus = "TX"
-
             if action == 'START':
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TIMEOUT'] = timeout
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TS'] = True
@@ -876,15 +873,16 @@ def process_message(_bmessage):
         logger.info(f'LINK_EVENT Received: {_message[1:]}')
 
     elif opcode == OPCODE['BRDG_EVENT']:
-        logger.info(f'BRIDGE EVENT: {_message[1:]}')
+        logger.debug(f'BRIDGE EVENT: {_message[1:]}')
         p = _message[1:].split(",")
-        # Import data from callsign
+        # Import data from DB
         db2dict(int(p[6]), "subscriber_ids")
         db2dict(int(p[8]), "talkgroup_ids")
         opbfilter = get_opbf()
         if p[0] == 'GROUP VOICE':
             rts_update(p)
             if p[2] != 'TX' and p[5] not in opbfilter:
+                logger.info(f'BRIDGE EVENT: {_message[1:]}')
                 if p[1] == 'END':
                     start_sys = 0
                     for x in sys_list:
@@ -927,13 +925,18 @@ def process_message(_bmessage):
                 LOGBUF.append(log_message)
 
         elif p[0] == 'UNIT DATA HEADER' and p[2] != 'TX' and p[5] not in opbfilter:
+            logger.info(f'BRIDGE EVENT: {_message[1:]}')
             # Insert data qso into lstheard DB table
             db_conn.ins_lstheard(None, p[0], p[3], p[8], p[6])
             # Insert data qso into lstheard_log DB table
             db_conn.ins_lstheard_log(None, p[0], p[3], p[8], p[6])
 
         else:
-            logger.warning('Unknown log message.')      
+            logger.warning('Unknown log message.')
+
+    elif opcode == OPCODE['SERVER_MSG']:
+        logger.info(f'SERVER MESSAGE: {_message}')
+
     else:
         logger.warning(f'got unknown opcode: {repr(opcode)}, message: {_message}')
 
@@ -942,7 +945,7 @@ def load_dictionary(_message):
     data = _message[1:]
     logger.debug('Successfully decoded dictionary')
     return loads(data)
-    
+
 
 ######################################################################
 #
@@ -1038,7 +1041,7 @@ class dashboard(WebSocketServerProtocol):
         self.factory.unregister(self)
 
     def onClose(self, wasClean, code, reason):
-        logger.info('WebSocket connection closed: %s', reason)
+        logger.info(f'WebSocket connection closed: {reason}')
 
 
 class dashboardFactory(WebSocketServerFactory):
@@ -1096,7 +1099,7 @@ def cleaning_loop():
 #######################################################################
 if __name__ == '__main__':
     # Define loggin configuration
-    logger = logging.getLogger('hbmon')
+    logger = logging.getLogger('fdmr-mon')
     logger.setLevel(logging.INFO)
     # Log handlers
     fh = logging.FileHandler(Path(LOG_PATH,LOG_NAME), encoding='utf8')
