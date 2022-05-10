@@ -1,112 +1,66 @@
-**HBmonitor is a "web dashboard" for HBlink by N0MJS.**
+**FDMR Monitor is a "web dashboard" for FreeDMR servers by OA4DOA.**
 
-***This is version of HBMonitor V2 by SP2ONG 2019-2021***
+***This version has been forked from HBMonitor V2 by SP2ONG 2019-2022***
 
-The main difference between HBMonitor v1 and v2 is the layout, i.e. the main page shows condensed 
-information and on the subpages, you can see the individual content that was shown on v1
+Some of the changes in FDMR Monitor:
+- Improved usage of memory and CPU.
+- Broadcasting groups has been added to save server's resources.
+- JavaScript code to support broadcasting groups.
+- The code has been updated to HTML5.
+- Page that shows static and single TG.
+- Data qso are showed in the dashboard.
 
-I recommend not running HBmonitor on the same computer as HBlink3
 
-HBmonitor tested on Debian v9 and v10
+FDMR Monitor has been tested on Debian v9, v10 and v11
 
-This version of HBMonv2 requires a web server like apache2, lighttpd and 
-php support running on the server. 
-
+This version of FDMR Monitor requires a web server like apache2, lighttpd and 
+php 7.x running on the server.
 
     cd /opt
-    git clone https://github.com/sp2ong/HBMonv2.git
-    cd HBMonv2
-    chmod +x install.sh
-    ./install.sh
-    cp config-SAMPLE.py config.py
-    edit config.py and change what you necessary
+    sudo git clone https://github.com/yuvelq/FDMR-Monitor
+    cd FDMR-Monitor
+    sudo chmod +x install.sh
+    sudo ./install.sh
+    sudo cp config-SAMPLE.py config.py
+    - Edit config.py and adjust it to your server configuration:
+        sudo nano config.py
 
-    You need to copy the contents of the /opt/HBMonv2/html directory to 
-    the web server directory. Suppose your web server is available 
-    as http://dmrserver.org, copy the file to for example /var/www/html
+    Copy the contents of the /opt/FDMR-Monitor/html directory to 
+    the web server directory.
+    - This example works for Apache server:
+        sudo cp /opt/FDMR-Monitor/html/* /var/www/html/ -r
 
-    If you copy files to /var/www/html/hbmon, HBMonitor will be 
-    accessible from http://dmrserver.org/hbmon
+    With this configuration you server will be available at:
+        http://yourserverhost.org/
 
-    You can copy to /var/www/hbmon and start HBMonitor access by configuring 
-    virtual the web server for subdomains e.g. hbmon.dmrserver.org 
-    the access will then be http://hbmon.dmrserver.org 
-
-    In the html/include/ directory there is a config.php file in which you 
-    set the color theme and name for your Dashboard. 
+    You will find a configuration file inside 
+    html/include/ in the root of the web server, called config.php in this file you can  
+    set the color theme and name for your Dashboard.
     
-    In the html/include/config.php you can defined height of Server Activity 
+    Also you can define the height of the Server Activity 
     window: 45px; 1 row, 60px 2 rows, 80px 3 rows:
     define("HEIGHT_ACTIVITY","45px");
 
-    In the html directory there is a buttons.html file that you can tune to menu keys 
+    In the same directory you will find a buttons.html file where you can add new buttons.
     
     The logo image you can replace with file image in html directory  img/logo.png
-    cp utils/lastheard /etc/cron.daily/
-    chmod +x /etc/cron.daily/lastheard
-    cp utils/hbmon.service /lib/systemd/system/
-    systemctl enable hbmon
-    systemctl start hbmon
-    systemctl status hbmon
+    sudo cp utils/logrotate/fdmr_monitor /etc/logrotate.d/
+    sudo cp utils/fdmr_mon.service /lib/systemd/system/
+    sudo systemctl enable fdmr_mon
+    sudo systemctl start fdmr_mon
+    sudo systemctl status fdmr_mon
     forward TCP port 9000 and web server port in firewall
-    
-    Please setup your SYSTEM INFO subpage with the following instruction:
-    
-    https://github.com/sp2ong/HBMonv2/tree/main/sysinfo
-    
-    Please remember the table lastheard displays only station transmissions 
-    that are longer than 2 sec.
-    use >=0 instead of >2 if you want to record all activities in line:
-    
-       if int(float(p[9])) > 2:  
-
-    If you want to have more than the last 15 entries in the Lastheard table
-    change in the monitor.py file line from:
-    
-       # maximum number of lists in lastheard on the main page 
-       if n == 15:
-    to for example:
-       if n == 25:
-    
-    
+        
     I recommend that you do not use the BRIDGE_INC = True option to display bridge information 
     (if you have multiple bridges displaying this information will increase the CPU load, 
     try to use BRIDGES_INC = False in config.py) 
     
-    
-    ***************************************************************************************
-    
-    The HBMonv2 version without use external web server like apache2 etc is still available:
-    
-    cd /opt
-    git clone https://github.com/sp2ong/HBMonv2.git
-    cd HBMonv2
-    git checkout webserver-python
-    chmod +x install.sh
-    ./install.sh
-    cp config-SAMPLE.py config.py
-    edit config.py and change what you necessary
-    cp utils/hbmon.service /lib/systemd/system/
-    systemctl enable hbmon
-    systemctl start hbmon
-    systemctl status hbmon
-    forward TCP port 9000 and web server port 8080 in firewall
-    
-    *****************************************************************************************
+
 ---
 
-After update distribution of Linux jinja2 to version 3.x you can find problem with run HBMonitor with error:
+**HBMonv2 by SP2ONG**
 
-     ValueError: The 'monitor' package was not installed in a way that PackageLoader understands.
-
-
-You must uninstall jinja2 and reinstalling with this version Jinja2==2.11.3
-
-    pip3 uninstall jinja2
-
-and
-
-    pip3 install Jinja2==2.11.3
+HBMonitor v2 for DMR Server based on HBlink/FreeDMR https://github.com/sp2ong/HBMonv2 
 
 ---
 
@@ -128,6 +82,3 @@ You should have received a copy of the GNU General Public License along with thi
 02110-1301  USA
 
 ---
-
-<img src="https://github.com/sp2ong/HBMonv2/raw/main/html/img/hbmon.png">
-

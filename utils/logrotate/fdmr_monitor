@@ -1,0 +1,8 @@
+/opt/FDMR-Monitor/log/hbmon.log {
+    daily
+    rotate 7
+    size 10M
+    compress
+    delaycompress
+    copytruncate
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#
+
 ###############################################################################
 #   Copyright (C) 2016-2019  Cortney T. Buffington, N0MJS <n0mjs@me.com>
 #
@@ -19,31 +19,31 @@
 ###############################################################################
 #
 #   Python 3 port by Steve Miller, KC1AWV <smiller@kc1awv.net>
-#
-###############################################################################
-###############################################################################
-#
 #   HBMonitor v2 (2021) Version by Waldek SP2ONG
+#
+###############################################################################
+#
+#  FDMR-Monitor (2021-22) Version by Christian Quiroz OA4DOA <adm@dmr-peru.pe>
 #
 ###############################################################################
 
 # Standard modules
 import logging
 from pathlib import Path
-import sys
 
 # Twisted modules
-from twisted.internet.protocol import ReconnectingClientFactory, Protocol
+from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
+from twisted.internet.threads import deferToThread
+from twisted.internet.defer import inlineCallbacks
 
 # Autobahn provides websocket service under Twisted
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 
 # Specific functions to import from standard modules
 from time import time, strftime, localtime
-from pickle import loads, dump as pkl_dump, load as pkl_load
-from os.path import isfile
+from pickle import loads
 from collections import deque
 
 # Web templating environment
@@ -52,11 +52,11 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 # Utilities from K0USY Group sister project
 from dmr_utils3.utils import int_id, try_download, bytes_4
 from json import load as jload
-from csv import DictReader as csv_dict_reader, reader as csv_reader
+from csv import DictReader as csv_dict_reader
 
 # Configuration variables and constants
 from config import *
-
+import moni_db
 
 # SP2ONG - Increase the value if HBlink link break occurs
 NetstringReceiver.MAX_LENGTH = 500000000
@@ -77,9 +77,12 @@ OPCODE = {
     'BRIDGE_UPD': '\x05',
     'LINK_EVENT': '\x06',
     'BRDG_EVENT': '\x07',
+    'SERVER_MSG': 'b'
     }
 
 # Global Variables:
+# Number of rows showed on the lastheard log page
+LASTHEARD_LOG_ROWS = 70
 CONFIG      = {}
 CTABLE      = {'MASTERS': {}, 'PEERS': {}, 'OPENBRIDGES': {}, 'SETUP': {}}
 BRIDGES     = {}
@@ -87,11 +90,16 @@ BTABLE      = {'BRIDGES': {}, 'SETUP': {}}
 BRIDGES_RX  = ''
 CONFIG_RX   = ''
 LOGBUF      = deque(100*[''], 100)
-lsthrd_log = deque(maxlen=50)
-lsthrd = deque(maxlen=LASTHEARD_ROWS)
-# lastheard   = deque(maxlen = LASTHEARD_ROWS)
-GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'lnksys': {}, 'opb': {}, 'statictg':{},
-     'log':{}, 'lsthrd_log':{}}
+
+GROUPS = {'all_clients': {}, 'main': {}, 'bridge': {}, 'lnksys': {}, 'opb': {},
+            'statictg':{}, 'log':{}, 'lsthrd_log':{}}
+
+peer_ids = {}
+subscriber_ids = {}
+talkgroup_ids = {}
+not_in_db = []
+# Store active queries
+act_query = []
 
 # Define setup setings
 CTABLE['SETUP']['LASTHEARD'] = LASTHEARD_INC
@@ -105,6 +113,7 @@ SUB_FIELDS   = ('id', 'callsign', 'fname', 'surname', 'city', 'state', 'country'
 PEER_FIELDS  = ('id', 'call_sign', 'city', 'state')
 TGID_FIELDS  = ('id', 'callsign')
 
+
 # OPB Filter for lastheard
 def get_opbf():
    if len(OPB_FILTER) !=0:
@@ -113,44 +122,44 @@ def get_opbf():
        mylist = []
    return mylist
 
+
 # For importing HTML templates
 def get_template(_file):
     with open(_file, 'r') as html:
         return html.read()
 
+
 # LONG VERSION - MAKES A FULL DICTIONARY OF INFORMATION BASED ON TYPE OF ALIAS FILE
-# BASED ON DOWNLOADS FROM RADIOID.NET     
+# BASED ON DOWNLOADS FROM RADIOID.NET
 # moved from dmr_utils3
-def mk_full_id_dict(_path, _file, _type):
-    _dict = {}
+def fill_table(_path, _file, _table, wipe_tbl=True):
+    temp_lst = []
     try:
-        with Path(_path,_file).open('r', encoding='utf8') as _handle:
+        with Path(_path, _file).open('r', encoding='utf8') as _handle:
             if _file.split('.')[1] == 'csv':
-                if _type == 'subscriber':
+                if _table == 'subscriber_ids':
                     fields = SUB_FIELDS
-                elif _type == 'peer':
+                elif _table == 'peer_ids':
                     fields = PEER_FIELDS
-                elif _type == 'tgid':
+                elif _table == 'talkgroup_ids':
                     fields = TGID_FIELDS
                 records = csv_dict_reader(_handle, fieldnames=fields, restkey='OTHER', dialect='excel', delimiter=',')
-            
-            else:       
+
+            else:
                 records = jload(_handle)
                 if 'count' in [*records]:
                     records.pop('count')
                 records = records[[*records][0]]
-                
-            if _type == 'peer':
+
+            if _table == 'peer_ids':
                 for record in records:
                     try:
-                        _dict[int(record['id'])] = {
-                            'CALLSIGN': record['callsign'],
-                            'CITY': record['city'],
-                            'STATE': record['state']}
+                        temp_lst.append((int(record['id']), record['callsign']))
+
                     except:
                         pass
 
-            elif _type == 'subscriber':
+            elif _table == 'subscriber_ids':
                 for record in records:
                     # Try to craete a string name regardless of existing data
                     if 'surname' in record and 'fname'in record:
@@ -163,25 +172,56 @@ def mk_full_id_dict(_path, _file, _type):
                         _name = 'NO NAME'
                     # Make dictionary entry, if any of the information below isn't in the record, it wil be skipped
                     try:
-                        _dict[int(record['id'])] = {
-                            'CALLSIGN': record['callsign'],
-                            'NAME': _name,}
-                            #'CITY': record['city'],
-                            #'STATE': record['state'],}
+                        temp_lst.append((int(record['id']), record['callsign'], _name))
+
                     except:
                         pass
 
-            elif _type == 'tgid':
+            elif _table == 'talkgroup_ids':
                 for record in records:
                     try:
-                        _dict[int(record['id'])] = {
-                            'NAME': record['callsign']}
+                        temp_lst.append((int(record['id']), record['callsign']))
+
                     except:
                         pass
-        return _dict
-    
-    except:
-        return _dict
+
+        if temp_lst:
+            db_conn.populate_tbl(_table, temp_lst, wipe_tbl, _file)
+
+    except Exception as err:
+        logger.error(f"fill_table error: {err}, {type(err)}")
+
+
+@inlineCallbacks
+# Update table
+def update_table(_path, _file, _url, _stale, _table):
+    try:
+        count = yield db_conn.table_count(_table)
+        result = yield deferToThread(try_download, _path, _file, _url, _stale)
+        if "successfully" in result or count < 1:
+            fill_table(_path, _file, _table)
+            update_local(_table)
+        else:
+            logger.info(result)
+
+    except Exception as err:
+        logger.error(f"update_table: {err}, {type(err)}")
+
+
+def update_local(_table=None):
+    updt_files = []
+    if _table == "peer_ids" or not _table:
+        updt_files.append((LOCAL_PEER_FILE, "peer_ids"))
+    if _table == "subscriber_ids" or not _table:
+        updt_files.append((LOCAL_SUB_FILE, "subscriber_ids"))
+    if _table == "talkgroup_ids" or not _table:
+        updt_files.append((LOCAL_TGID_FILE, "talkgroup_ids"))
+
+    for file, tbl in updt_files:
+        if not Path(PATH, file).exists():
+            continue
+        fill_table(PATH, file, tbl, wipe_tbl=False)
+
 
 # THESE ARE THE SAME THING FOR LEGACY PURPOSES
 # moved from dmr_urils3
@@ -201,6 +241,7 @@ def get_alias(_id, _dict, *args):
             return _dict[_id]
     return _id
 
+
 # Alias string processor
 def alias_string(_id, _dict):
     alias = get_alias(_id, _dict, 'CALLSIGN', 'CITY', 'STATE')
@@ -212,6 +253,7 @@ def alias_string(_id, _dict):
     else:
         return alias
 
+
 def alias_short(_id, _dict):
     alias = get_alias(_id, _dict, 'CALLSIGN', 'NAME')
     if type(alias) == list:
@@ -221,6 +263,7 @@ def alias_short(_id, _dict):
         return ', '.join(alias)
     else:
         return str(alias)
+
 
 def alias_call(_id, _dict):
     alias = get_alias(_id, _dict, 'CALLSIGN')
@@ -232,12 +275,14 @@ def alias_call(_id, _dict):
     else:
         return str(alias)
 
+
 def alias_tgid(_id, _dict):
     alias = get_alias(_id, _dict, 'NAME')
     if type(alias) == list:
         return str(alias[0])
     else:
         return str(" ")
+
 
 # Return friendly elapsed time from time in seconds.
 def time_str(_time, param):
@@ -260,31 +305,29 @@ def time_str(_time, param):
         return f'{seconds}s'
  
 
-def pkl_hdlr(p):
-    if p == 'get':
-        try:
-            if isfile(PKL_FILE):
-                with open(PKL_FILE, 'rb') as fh:
-                    tmp_pkl = pkl_load(fh)
-                for dict_ in tmp_pkl:
-                    for entry in reversed(tmp_pkl[dict_]):
-                        if dict_ == 'lsthrd':
-                            deque_ = lsthrd
-                        else:
-                            deque_ = lsthrd_log
-                        deque_.appendleft(entry)
-                    logger.info(f'{len(deque_)} entries imported from {dict_}')
+@inlineCallbacks
+def db2dict(_id, _table):
+    if _table == "subscriber_ids":
+        _dict = subscriber_ids
+    elif _table == "talkgroup_ids":
+        _dict = talkgroup_ids
 
-        except Exception as err:
-            logger.warning(f'Error when loading pickle file.\n{err}')
+    if _id in _dict or _id in not_in_db or _id in act_query:
+        return
+    act_query.append(_id)
 
-    elif p == 'save':
-        with open(PKL_FILE, 'wb') as fh:
-            tmp_pkl = {'lsthrd':lsthrd, 'lsthrd_log':lsthrd_log}
-            pkl_dump(tmp_pkl,fh)
-        logger.debug('lastheard.pkl saved correctly')
+    result = yield db_conn.slct_2dict(_id, _table)
+    if result:
+        if _table == "subscriber_ids":
+            subscriber_ids[result[0]] = {'CALLSIGN':result[1], 'NAME':result[2]}
 
+        elif _table == "talkgroup_ids":
+            talkgroup_ids[result[0]] = {'NAME':result[1]}
+    else:
+        not_in_db.append(_id)
+    act_query.remove(_id)
 
+    
 def error_hdl(failure):
     # Called when loop execution failed.
     logger.error(f'Loop error: {failure.getBriefTraceback()}, stopping the reactor.')
@@ -292,7 +335,7 @@ def error_hdl(failure):
 
 
 ##################################################
-# Cleaning entries in tables - Timeout (5 min) 
+# Cleaning entries in tables - Timeout (5 min)
 #
 def cleanTE():
     timeout = time()
@@ -331,14 +374,14 @@ def cleanTE():
             if td > 3:
                  del CTABLE['OPENBRIDGES'][system]['STREAMS'][streamId]
 
-                    
+
 def add_hb_peer(_peer_conf, _ctable_loc, _peer):
     _ctable_loc[int_id(_peer)] = {}
     _ctable_peer = _ctable_loc[int_id(_peer)]
 
     # if the Frequency is 000.xxx assume it's not an RF peer, otherwise format the text fields
     # (9 char, but we are just software)  see https://wiki.brandmeister.network/index.php/Homebrew/example/php2
-    
+
     if _peer_conf['TX_FREQ'].strip().isdigit() and _peer_conf['RX_FREQ'].strip().isdigit() and str(type(_peer_conf['TX_FREQ'])).find("bytes") != -1 and str(type(_peer_conf['RX_FREQ'])).find("bytes") != -1:
         if _peer_conf['TX_FREQ'][:3] == b'000' or _peer_conf['TX_FREQ'][:1] == b'0' or _peer_conf['RX_FREQ'][:3] == b'000' or _peer_conf['RX_FREQ'][:1] == b'0':
             _ctable_peer['TX_FREQ'] = 'N/A'
@@ -348,7 +391,7 @@ def add_hb_peer(_peer_conf, _ctable_loc, _peer):
             _ctable_peer['RX_FREQ'] = _peer_conf['RX_FREQ'][:3].decode('utf-8') + '.' + _peer_conf['RX_FREQ'][3:7].decode('utf-8') + ' MHz'
     else:
         _ctable_peer['TX_FREQ'] = 'N/A'
-        _ctable_peer['RX_FREQ'] = 'N/A'      
+        _ctable_peer['RX_FREQ'] = 'N/A'
     # timeslots are kinda complicated too. 0 = none, 1 or 2 mean that one slot, 3 is both, and anything else it considered DMO
     # Slots (0, 1=1, 2=2, 1&2=3 Duplex, 4=Simplex) see https://wiki.brandmeister.network/index.php/Homebrew/example/php2
     
@@ -386,20 +429,20 @@ def add_hb_peer(_peer_conf, _ctable_loc, _peer):
        _ctable_peer['URL'] = _peer_conf['URL'].decode('utf-8').strip()
     else:
        _ctable_peer['URL'] = _peer_conf['URL']
-       
+
     if str(type(_peer_conf['CALLSIGN'])).find("bytes") != -1:
        _ctable_peer['CALLSIGN'] = _peer_conf['CALLSIGN'].decode('utf-8').strip()
     else:
        _ctable_peer['CALLSIGN'] = _peer_conf['CALLSIGN']
-    
+
     if str(type(_peer_conf['COLORCODE'])).find("bytes") != -1:
        _ctable_peer['COLORCODE'] = _peer_conf['COLORCODE'].decode('utf-8').strip()
-    else:    
+    else:
        _ctable_peer['COLORCODE'] = _peer_conf['COLORCODE']
-    
+
     _ctable_peer['CONNECTION'] = _peer_conf['CONNECTION']
     _ctable_peer['CONNECTED'] = time_str(_peer_conf['CONNECTED'], 'since')
-    
+
     _ctable_peer['IP'] = _peer_conf['IP']
     _ctable_peer['PORT'] = _peer_conf['PORT']
     #_ctable_peer['LAST_PING'] = _peer_conf['LAST_PING']
@@ -414,7 +457,7 @@ def add_hb_peer(_peer_conf, _ctable_loc, _peer):
         _ctable_peer[ts]['DEST'] = ''
 
 
-######################################################################
+###############################################################################
 #
 # Build the HBlink connections table
 #
@@ -442,12 +485,12 @@ def build_hblink_table(_config, _stats_table):
                      _stats_table['PEERS'][_hbp]['LOCATION'] = _hbp_data['LOCATION'].decode('utf-8').strip()
                 else:
                      _stats_table['PEERS'][_hbp]['LOCATION'] = _hbp_data['LOCATION']
-                     
+
                 if str(type(_hbp_data['DESCRIPTION'])).find("bytes") != -1:
                      _stats_table['PEERS'][_hbp]['DESCRIPTION'] = _hbp_data['DESCRIPTION'].decode('utf-8').strip()
                 else:
                      _stats_table['PEERS'][_hbp]['DESCRIPTION'] = _hbp_data['DESCRIPTION']
-                     
+
                 if str(type(_hbp_data['URL'])).find("bytes") != -1:
                      _stats_table['PEERS'][_hbp]['URL'] = _hbp_data['DESCRIPTION'].decode('utf-8').strip()
                 else:
@@ -462,7 +505,7 @@ def build_hblink_table(_config, _stats_table):
                 _stats_table['PEERS'][_hbp]['MASTER_IP'] = _hbp_data['MASTER_IP']
                 _stats_table['PEERS'][_hbp]['MASTER_PORT'] = _hbp_data['MASTER_PORT']
                 _stats_table['PEERS'][_hbp]['STATS'] = {}
-                if _stats_table['PEERS'][_hbp]['MODE'] == 'XLXPEER': 
+                if _stats_table['PEERS'][_hbp]['MODE'] == 'XLXPEER':
                     _stats_table['PEERS'][_hbp]['STATS']['CONNECTION'] = _hbp_data['XLXSTATS']['CONNECTION']
                     if _hbp_data['XLXSTATS']['CONNECTION'] == "YES":
                         _stats_table['PEERS'][_hbp]['STATS']['CONNECTED'] = time_str(_hbp_data['XLXSTATS']['CONNECTED'],'since')
@@ -509,7 +552,6 @@ def build_hblink_table(_config, _stats_table):
                 _stats_table['OPENBRIDGES'][_hbp]['TARGET_IP'] = _hbp_data['TARGET_IP']
                 _stats_table['OPENBRIDGES'][_hbp]['TARGET_PORT'] = _hbp_data['TARGET_PORT']
                 _stats_table['OPENBRIDGES'][_hbp]['STREAMS'] = {}
-    #return(_stats_table)
 
 
 def update_hblink_table(_config, _stats_table):
@@ -626,26 +668,49 @@ def build_stats():
         active_groups = [group for group, value in GROUPS.items() if value]
         if CONFIG:
             if 'main' in active_groups:
-                main = 'i' + itemplate.render(_table=CTABLE, lastheard=lsthrd)
-                dashboard_server.broadcast(main, 'main')
+                render_fromdb("last_heard", LASTHEARD_ROWS)
             if 'lnksys' in active_groups:
                 lnksys = 'c' + ctemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)
                 dashboard_server.broadcast(lnksys, 'lnksys')
-            if 'opb' in active_groups: 
+            if 'opb' in active_groups:
                 opb = 'o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
                 dashboard_server.broadcast(opb, 'opb')
             if 'statictg' in active_groups:
                 statictg = 's' + stemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)
                 dashboard_server.broadcast(statictg, 'statictg')
             if 'lsthrd_log' in active_groups:
-                lsth_log = 'h' + htemplate.render(_table=lsthrd_log)
-                dashboard_server.broadcast(lsth_log, 'lsthrd_log')
+                render_fromdb("lstheard_log", LASTHEARD_LOG_ROWS)
 
         if BRIDGES and BRIDGES_INC and BTABLE['SETUP']['BRIDGES']:
             if 'bridge' in active_groups:
                 bridges = 'b' + btemplate.render(_table=BTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])
                 dashboard_server.broadcast(bridges, 'bridge')
         build_time = time()
+
+
+@inlineCallbacks
+def render_fromdb(_table, _row_num, _snd=False):
+    try:
+        result = yield db_conn.slct_2render(_table, _row_num)
+        if result:
+            if not _snd:
+                if _table == "last_heard":
+                    main = 'i' + itemplate.render(_table=CTABLE, lastheard=result)
+                    dashboard_server.broadcast(main, 'main')
+
+                if _table == "lstheard_log":
+                    lsth_log = 'h' + htemplate.render(_table=result)
+                    dashboard_server.broadcast(lsth_log, 'lsthrd_log')
+
+            else:
+                if _table == "last_heard":
+                    _snd.sendMessage(('i' + itemplate.render(_table=CTABLE, lastheard=result)).encode('utf-8'))
+
+                if _table == "lstheard_log":
+                    _snd.sendMessage(('h' + htemplate.render(_table=result)).encode('utf-8'))
+
+    except Exception as err:
+        logger.error(f"render_fromdb: {err}, {type(err)}")
 
 
 def build_tgstats():
@@ -655,7 +720,7 @@ def build_tgstats():
         srv_info = 0
         # make a list with occupied systems
         for system in CTABLE['MASTERS']:
-            if not CTABLE['MASTERS'][system]['PEERS']:continue
+            if not CTABLE['MASTERS'][system]['PEERS']: continue
             for peer in CTABLE['MASTERS'][system]['PEERS']:
                 if peer == 4294967295: continue
                 if system not in tmp_dict:
@@ -669,9 +734,9 @@ def build_tgstats():
             if not srv_info and '_default_options' in CONFIG[system]:
                 CTABLE['SERVER']['SINGLE_MODE'] = CONFIG[system]['SINGLE_MODE']
                 for item in CONFIG[system]['_default_options'].split(';')[:2]:
-                    if len(item) > 11 and item[:11] == 'TS1_STATIC=':
+                    if len(item) > 11 and item.startswith('TS1_STATIC='):
                         CTABLE['SERVER']['TS1'] = item[11:].split(',')
-                    if len(item) > 11 and item[:11] == 'TS2_STATIC=':
+                    if len(item) > 11 and item.startswith('TS2_STATIC='):
                         CTABLE['SERVER']['TS2'] = item[11:].split(',')
                 srv_info = 1
             for peer in CTABLE['MASTERS'][system]['PEERS']:
@@ -721,14 +786,12 @@ def rts_update(p):
     timeSlot = int(p[7])
     destination = int(p[8])
     timeout = time()
-    
     if system in CTABLE['MASTERS']:
         for peer in CTABLE['MASTERS'][system]['PEERS']:
             if sourcePeer == peer:
                 crxstatus = "RX"
             else:
                 crxstatus = "TX"
-
             if action == 'START':
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TIMEOUT'] = timeout
                 CTABLE['MASTERS'][system]['PEERS'][peer][timeSlot]['TS'] = True
@@ -783,12 +846,12 @@ def rts_update(p):
 
     build_stats()
 
+
 ######################################################################
 #
 # PROCESS INCOMING MESSAGES AND TAKE THE CORRECT ACTION DEPENING ON
 #    THE OPCODE
 #
-
 def process_message(_bmessage):
     global CTABLE, CONFIG, BRIDGES, CONFIG_RX, BRIDGES_RX, BRIDGES_INC
     _message = _bmessage.decode('utf-8', 'ignore')
@@ -816,34 +879,34 @@ def process_message(_bmessage):
         logger.info(f'LINK_EVENT Received: {_message[1:]}')
 
     elif opcode == OPCODE['BRDG_EVENT']:
-        logger.info(f'BRIDGE EVENT: {_message[1:]}')
+        logger.debug(f'BRIDGE EVENT: {_message[1:]}')
         p = _message[1:].split(",")
+        # Import data from DB
+        db2dict(int(p[6]), "subscriber_ids")
+        db2dict(int(p[8]), "talkgroup_ids")
         opbfilter = get_opbf()
         if p[0] == 'GROUP VOICE':
             rts_update(p)
             if p[2] != 'TX' and p[5] not in opbfilter:
+                logger.info(f'BRIDGE EVENT: {_message[1:]}')
                 if p[1] == 'END':
-                    start_sys=0
+                    start_sys = 0
                     for x in sys_list:
-                        if x[0]== p[3] and x[1] == p[4]:
+                        if x[0] == p[3] and x[1] == p[4]:
                             sys_list.remove(x)
                             start_sys=1
                             break
-                if p[1] == 'END' and start_sys==1:
+
+                if p[1] == 'END' and start_sys == 1:
                     log_message = f'{_now[10:19]} {p[0][6:]} {p[1]}   SYS: {p[3]:8.8s} SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: {p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s} Time: {int(float(p[9]))}s'
                     # log only to file if system is NOT OpenBridge event (not logging open bridge system, name depends on your OB definitions) AND transmit time is LONGER as 2sec (make sense for very short transmits)
                     if LASTHEARD_INC:
-                        # save QSOs to lastheared.log for which transmission duration is longer than 2 sec, 
-                        # use >=0 instead of >2 if you want to record all activities
+                        # Insert voice qso into lstheard_log DB table
+                        db_conn.ins_lstheard_log(p[9], p[0], p[3], p[8], p[6])
+                        # use >= 0 instead of > 2 if you want to record all activities
                         if int(float(p[9])) > 2:
-                            lsthrd_msg = [_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]),
-                                    talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')]
-                            lsthrd_log.appendleft(lsthrd_msg)
-                            for item in lsthrd:
-                                if p[6] == item[10]:
-                                    lsthrd.remove(item)
-                                    break
-                            lsthrd.appendleft(lsthrd_msg)
+                            # Insert voice qso into lstheard DB table
+                            db_conn.ins_lstheard(p[9], p[0], p[3], p[8], p[6])
                     # End of Lastheard
                     # Removing obsolete entries from the sys_list (3 sec)
                     for item in list(sys_list):
@@ -854,28 +917,32 @@ def process_message(_bmessage):
                     log_message = f'{_now[10:19]} {p[0][6:]} {p[1]} SYS: {p[3]:8.8s} SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: {p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s}'
                     timeST = time()
                     sys_list.append([p[3],p[4],timeST])
+
                 elif p[1] == 'END' and start_sys==0:
                     log_message = f'{_now[10:19]} {p[0][6:]} {p[1]}   SYS: {p[3]:8.8s} SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: {p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s} Time: {int(float(p[9]))}s'
+
                 elif p[1] == 'END WITHOUT MATCHING START':
                     log_message = f'{_now[10:19]} {p[0][6:]} {p[1]} on SYSTEM {p[3]:8.8s}: SRC_ID: {p[5]:9.9s} TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} SUB: { p[6]:9.9s}; {alias_short(int(p[6]), subscriber_ids):18.18s}'
+
                 else:
-                    log_message = f'{_now[10:19]} UNKNOWN GROUP VOICE LOG MESSAGE'
+                    log_message = f'{_now[10:19]} Unknown GROUP VOICE log message.'
 
                 dashboard_server.broadcast('l' + log_message, 'log')
                 LOGBUF.append(log_message)
 
         elif p[0] == 'UNIT DATA HEADER' and p[2] != 'TX' and p[5] not in opbfilter:
-            for item in lsthrd:
-                if p[6] == item[10]:
-                    lsthrd.remove(item)
-                    break
-            lsthrd_msg = [_now, 'DATA', p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8], alias_tgid(int(p[8]),
-                 talkgroup_ids), p[6], alias_short(int(p[6]), subscriber_ids).split(',')]
-            for dq in (lsthrd, lsthrd_log):
-                dq.appendleft(lsthrd_msg)
+            logger.info(f'BRIDGE EVENT: {_message[1:]}')
+            # Insert data qso into lstheard DB table
+            db_conn.ins_lstheard(None, p[0], p[3], p[8], p[6])
+            # Insert data qso into lstheard_log DB table
+            db_conn.ins_lstheard_log(None, p[0], p[3], p[8], p[6])
 
         else:
-            logger.warning(f'{_now[10:19]} UNKNOWN LOG MESSAGE')      
+            logger.warning(f'Unknown log message: {_message}')
+
+    elif opcode == OPCODE['SERVER_MSG']:
+        logger.info(f'SERVER MSG: {_message}')
+
     else:
         logger.warning(f'got unknown opcode: {repr(opcode)}, message: {_message}')
 
@@ -884,7 +951,7 @@ def load_dictionary(_message):
     data = _message[1:]
     logger.debug('Successfully decoded dictionary')
     return loads(data)
-    
+
 
 ######################################################################
 #
@@ -907,7 +974,7 @@ class report(NetstringReceiver):
 
 class reportClientFactory(ReconnectingClientFactory):
     def __init__(self):
-        logger.info('reportClient object for connecting to HBlink.py created at: %s', self)
+        logger.info(f'reportClient object for connecting to HBlink.py created at: {self}')
 
     def startedConnecting(self, connector):
         logger.info('Initiating Connection to Server.')
@@ -941,17 +1008,17 @@ class reportClientFactory(ReconnectingClientFactory):
 class dashboard(WebSocketServerProtocol):
 
     def onConnect(self, request):
-        logger.info('Client connecting: %s', request.peer)
+        logger.info(f'Client connecting: {request.peer}')
 
     def onOpen(self):
         logger.info('WebSocket connection open.')
 
     def onMessage(self, payload, isBinary):
         if isBinary:
-            logger.info('Binary message received: %s bytes', len(payload))
+            logger.info(f'Binary message received: {len(payload)} bytes')
         else:
             msg = payload.decode('utf-8').split(',')
-            logger.info('Text message received: %s', payload)
+            logger.info(f'Text message received: {payload}')
             if msg[0] == 'conf':
                 for group in msg[1:]:
                     if group in GROUPS:
@@ -964,11 +1031,11 @@ class dashboard(WebSocketServerProtocol):
                         elif group == 'opb':
                             self.sendMessage(('o' + otemplate.render(_table=CTABLE,dbridges=BTABLE['SETUP']['BRIDGES'])).encode('utf-8'))
                         elif group == 'main':
-                            self.sendMessage(('i' + itemplate.render(_table=CTABLE, lastheard=lsthrd)).encode('utf-8'))
+                            render_fromdb("last_heard", LASTHEARD_ROWS, self)
                         elif group == 'statictg':
                             self.sendMessage(('s' + stemplate.render(_table=CTABLE,emaster=EMPTY_MASTERS)).encode('utf-8'))
                         elif group == 'lsthrd_log':
-                            self.sendMessage(('h' + htemplate.render(_table=lsthrd_log)).encode('utf-8'))
+                            render_fromdb("lstheard_log", LASTHEARD_LOG_ROWS, self)
                         elif group == 'log':
                             for _message in LOGBUF:
                                 if _message:
@@ -980,7 +1047,7 @@ class dashboard(WebSocketServerProtocol):
         self.factory.unregister(self)
 
     def onClose(self, wasClean, code, reason):
-        logger.info('WebSocket connection closed: %s', reason)
+        logger.info(f'WebSocket connection closed: {reason}')
 
 
 class dashboardFactory(WebSocketServerFactory):
@@ -1007,9 +1074,38 @@ class dashboardFactory(WebSocketServerFactory):
             client.sendMessage(msg.encode('utf8'))
             logger.debug('message sent to %s', client.peer)
 
+
+@inlineCallbacks
+# Show the number of entries in the DB tables
+def count_db_entries():
+    try:
+        for tbl in ("peer_ids", "talkgroup_ids", "subscriber_ids"):
+            result = yield db_conn.table_count(tbl)
+            if result:
+                logger.info(f"{tbl} entries: {result}")
+
+    except Exception as err:
+        logger.error(f"count_db_entries: {err}, {type(err)}")
+
+
+def file_update():
+    # Download, update files and tables
+    for file, url, tbl in ((PEER_FILE, PEER_URL, "peer_ids"), (SUBSCRIBER_FILE, SUBSCRIBER_URL, "subscriber_ids"),
+                           (TGID_FILE, TGID_URL, "talkgroup_ids")):
+
+        update_table(PATH, file, url, FILE_RELOAD * 86400, tbl)
+
+
+def cleaning_loop():
+    tbls = (("last_heard", LASTHEARD_ROWS), ("lstheard_log", LASTHEARD_LOG_ROWS))
+    for _table, _row_num in tbls:
+        db_conn.clean_table(_table, _row_num)
+
+
 #######################################################################
 if __name__ == '__main__':
-    logger = logging.getLogger('hbmon')
+    # Define loggin configuration
+    logger = logging.getLogger('fdmr-mon')
     logger.setLevel(logging.INFO)
     # Log handlers
     fh = logging.FileHandler(Path(LOG_PATH,LOG_NAME), encoding='utf8')
@@ -1025,43 +1121,10 @@ if __name__ == '__main__':
     logger.addHandler(ch)
 
     logger.info('monitor.py starting up')
-    logger.info('\n\n\tCopyright (c) 2016, 2017, 2018, 2019\n\tThe Regents of the K0USY Group. All rights reserved.\n\n\tPython 3 port:\n\t2019 Steve Miller, KC1AWV <smiller@kc1awv.net>\n\n\tFDMR-Monitor OA4DOA 2021\n\n')
+    logger.info('\n\n\tCopyright (c) 2016-2022\n\tThe Regents of the K0USY Group. All rights reserved.\n\n\tPython 3 port:\n\t2019 Steve Miller, KC1AWV <smiller@kc1awv.net>\n\n\tFDMR-Monitor OA4DOA 2022\n\n')
     
-    # Download alias files
-    for file,url in ((PEER_FILE,PEER_URL),(SUBSCRIBER_FILE,SUBSCRIBER_URL),(TGID_FILE,TGID_URL)):
-        result = try_download(PATH, file, url, (FILE_RELOAD * 86400))
-        logger.info(result)
-
-    # Make Alias Dictionaries
-    peer_ids = mk_full_id_dict(PATH, PEER_FILE, 'peer')
-    if peer_ids:
-        logger.info('ID ALIAS MAPPER: peer_ids dictionary is available')
-
-    subscriber_ids = mk_full_id_dict(PATH, SUBSCRIBER_FILE, 'subscriber')
-    if subscriber_ids:
-        logger.info('ID ALIAS MAPPER: subscriber_ids dictionary is available')
-
-    talkgroup_ids = mk_full_id_dict(PATH, TGID_FILE, 'tgid')
-    if talkgroup_ids:
-        logger.info('ID ALIAS MAPPER: talkgroup_ids dictionary is available')
-
-    local_subscriber_ids = mk_full_id_dict(PATH, LOCAL_SUB_FILE, 'subscriber')
-    if local_subscriber_ids:
-        logger.info('ID ALIAS MAPPER: local_subscriber_ids added to subscriber_ids dictionary')
-        subscriber_ids.update(local_subscriber_ids)
-
-    local_talkgroup_ids = mk_full_id_dict(PATH, LOCAL_TGID_FILE, 'tgid')
-    if local_talkgroup_ids:
-        logger.info('ID ALIAS MAPPER: local_talkgroup_ids added to talkgroup_ids dictionary')
-        talkgroup_ids.update(local_talkgroup_ids)
-
-    local_peer_ids = mk_full_id_dict(PATH, LOCAL_PEER_FILE, 'peer')
-    if local_peer_ids:
-        logger.info('ID ALIAS MAPPER: local_peer_ids added peer_ids dictionary')
-        peer_ids.update(local_peer_ids)
-
-    # Import entries from lastheard pickle
-    pkl_hdlr('get')
+    # Create an instance of MoniDB
+    db_conn = moni_db.MoniDB()
 
     # Jinja2 Stuff
     env = Environment(
@@ -1081,23 +1144,27 @@ if __name__ == '__main__':
     update_stats = task.LoopingCall(build_stats)
     update_stats.start(FREQUENCY).addErrback(error_hdl)
 
-    # Start a timout loop
+    # Start the timout loop
     if CLIENT_TIMEOUT > 0:
         timeout = task.LoopingCall(timeout_clients)
         timeout.start(10).addErrback(error_hdl)
 
-    # Start pickle handler
-    lastheard_loop = task.LoopingCall(pkl_hdlr, 'save')
-    lastheard_loop.start(30).addErrback(error_hdl)
+    # files update loop
+    file_loop = task.LoopingCall(file_update)
+    file_loop.start(1800).addErrback(error_hdl)
+
+    # Clean DB tables loop
+    cdb_loop = task.LoopingCall(cleaning_loop)
+    cdb_loop.start(900).addErrback(error_hdl)
+
+    # Update local files at start
+    reactor.callLater(3, update_local)
+    # Show number of entries in the DB tables
+    reactor.callLater(5, count_db_entries)
 
     # Connect to HBlink
     reactor.connectTCP(HBLINK_IP, HBLINK_PORT, reportClientFactory())
 
-    def print_tables():
-        print(CTABLE)
-        # for _dict in (CONFIG, BRIDGES):
-        #     print(f'dictionario:\n{_dict}')
-    reactor.callLater(120, print_tables)
 
     # HBmonitor does not require the use of SSL as no "sensitive data" is sent to it but if you want to use SSL:
     # create websocket server to push content to clients via SSL https://

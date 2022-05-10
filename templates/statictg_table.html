@@ -1,5 +1,5 @@
 <fieldset class="big">
-  <legend><b>&nbsp;.: Static TG :.&nbsp;</b></legend>
+  <legend><b>.: Static TG :.</b></legend>
   {% if _table['MASTERS']|length > 0 %}
   <table class="stctg">
     <tr>
@@ -41,13 +41,13 @@
         <td class="connted-bkgnd" rowspan="2">{{ _cdata['CONNECTED'] }}</td>
         <td class="txt-b70101 ts1-bkgnd">TS1</td>
         <td class="ts1-bkgnd">{{ _cdata['TS1_STATIC']|join(', ') }}</td>
-        <td class="ts1-bkgnd" style="color: #1a1aff;">{{ _cdata['SINGLE_TS1']['TGID'] if 'SINGLE_TS1' in _cdata else '' }}</td>
-        <td class="ts1-bkgnd">{{ _cdata['SINGLE_TS1']['TO'] if 'SINGLE_TS1' in _cdata else '' }}</td>
+        <td class="ts1-bkgnd txt-008000">{{ _cdata['SINGLE_TS1']['TGID'] if 'SINGLE_TS1' in _cdata else '' }}</td>
+        <td class="ts1-bkgnd txt-008000">{{ _cdata['SINGLE_TS1']['TO'] if 'SINGLE_TS1' in _cdata else '' }}</td>
       <tr>
         <td><span class="txt-3a4aa6">TS2</span></td>
         <td>{{ _cdata['TS2_STATIC']|join(', ') }}</td>
-        <td style="color: #008000;">{{ _cdata['SINGLE_TS2']['TGID'] if 'SINGLE_TS2' in _cdata else '' }}</td>
-        <td style="color: #008000;">{{ _cdata['SINGLE_TS2']['TO'] if 'SINGLE_TS2' in _cdata else '' }}</td>
+        <td class="txt-008000">{{ _cdata['SINGLE_TS2']['TGID'] if 'SINGLE_TS2' in _cdata else '' }}</td>
+        <td class="txt-008000">{{ _cdata['SINGLE_TS2']['TO'] if 'SINGLE_TS2' in _cdata else '' }}</td>
       </tr>
       </tr>
       {% endfor %}
