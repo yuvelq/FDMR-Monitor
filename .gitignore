@@ -2,3 +2,5 @@
 config.py
 *.log
 *.json
+*.csv
+*.db
