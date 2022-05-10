@@ -61,6 +61,12 @@ import moni_db
 # SP2ONG - Increase the value if HBlink link break occurs
 NetstringReceiver.MAX_LENGTH = 500000000
 
+
+PKL_FILE = Path(PATH, 'lastheard.pkl')
+if 'LASTHEARD_CACHE' in vars() or 'LASTHEARD_CACHE' in globals():
+    PKL_FILE = Path(PATH, LASTHEARD_CACHE)
+
+
 # Opcodes for reporting protocol to HBlink
 OPCODE = {
     'CONFIG_REQ': '\x00',
@@ -317,11 +323,11 @@ def db2dict(_id, _table):
 
         elif _table == "talkgroup_ids":
             talkgroup_ids[result[0]] = {'NAME':result[1]}
-
     else:
         not_in_db.append(_id)
     act_query.remove(_id)
 
+    
 def error_hdl(failure):
     # Called when loop execution failed.
     logger.error(f'Loop error: {failure.getBriefTraceback()}, stopping the reactor.')
@@ -1172,10 +1178,26 @@ if __name__ == '__main__':
     #dashboard_server.protocol = dashboard
     #reactor.listenSSL(9000, dashboard_server,certificate)
 
-    # Create websocket server to push content to clients via http:// non SSL
-    dashboard_server = dashboardFactory('ws://*:9000')
-    dashboard_server.protocol = dashboard
-    reactor.listenTCP(9000, dashboard_server)
+    _useSSL = False
+    _websocketPort = 9000
+    if 'USE_SSL' in vars() or 'USE_SSL' in globals():
+        _useSSL = USE_SSL
 
+    if 'WEBSOCKET_PORT' in vars() or 'WEBSOCKET_PORT' in globals():
+        _websocketPort = WEBSOCKET_PORT
+
+    logger.info('Starting webserver on port %d with SSL=%s' % (_websocketPort, _useSSL))
+
+    if _useSSL:
+        from twisted.internet import ssl
+        certificate = ssl.DefaultOpenSSLContextFactory(SSL_PRIVATEKEY, SSL_CERTIFICATE)
+        dashboard_server = dashboardFactory('wss://*:%d' % _websocketPort)
+        dashboard_server.protocol = dashboard
+        reactor.listenSSL(_websocketPort, dashboard_server, certificate)
+
+    else:
+        dashboard_server = dashboardFactory('ws://*:%d' % _websocketPort)
+        dashboard_server.protocol = dashboard
+        reactor.listenTCP(_websocketPort, dashboard_server)
 
     reactor.run()
