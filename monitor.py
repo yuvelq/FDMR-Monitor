@@ -29,7 +29,12 @@
 
 # Standard modules
 import logging
+from collections import deque
+from csv import DictReader as csv_dict_reader
+from json import load as jload
 from pathlib import Path
+from pickle import loads
+from time import time, strftime, localtime
 
 # Twisted modules
 from twisted.internet.protocol import ReconnectingClientFactory
@@ -37,35 +42,20 @@ from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 from twisted.internet.threads import deferToThread
 from twisted.internet.defer import inlineCallbacks
-
 # Autobahn provides websocket service under Twisted
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
-
-# Specific functions to import from standard modules
-from time import time, strftime, localtime
-from pickle import loads
-from collections import deque
-
 # Web templating environment
 from jinja2 import Environment, PackageLoader, select_autoescape
-
 # Utilities from K0USY Group sister project
 from dmr_utils3.utils import int_id, try_download, bytes_4
-from json import load as jload
-from csv import DictReader as csv_dict_reader
 
-# Configuration variables and constants
-from config import *
+# Local modules and config variables
 import moni_db
+from config import *
+
 
 # SP2ONG - Increase the value if HBlink link break occurs
 NetstringReceiver.MAX_LENGTH = 500000000
-
-
-PKL_FILE = Path(PATH, 'lastheard.pkl')
-if 'LASTHEARD_CACHE' in vars() or 'LASTHEARD_CACHE' in globals():
-    PKL_FILE = Path(PATH, LASTHEARD_CACHE)
-
 
 # Opcodes for reporting protocol to HBlink
 OPCODE = {
@@ -210,11 +200,11 @@ def update_table(_path, _file, _url, _stale, _table):
 
 def update_local(_table=None):
     updt_files = []
-    if _table == "peer_ids" or not _table:
+    if _table == "peer_ids" or not _table and LOCAL_PEER_FILE:
         updt_files.append((LOCAL_PEER_FILE, "peer_ids"))
-    if _table == "subscriber_ids" or not _table:
+    if _table == "subscriber_ids" or not _table and LOCAL_SUB_FILE:
         updt_files.append((LOCAL_SUB_FILE, "subscriber_ids"))
-    if _table == "talkgroup_ids" or not _table:
+    if _table == "talkgroup_ids" or not _table and LOCAL_TGID_FILE:
         updt_files.append((LOCAL_TGID_FILE, "talkgroup_ids"))
 
     for file, tbl in updt_files:
@@ -1088,7 +1078,7 @@ def count_db_entries():
         logger.error(f"count_db_entries: {err}, {type(err)}")
 
 
-def file_update():
+def files_update():
     # Download, update files and tables
     for file, url, tbl in ((PEER_FILE, PEER_URL, "peer_ids"), (SUBSCRIBER_FILE, SUBSCRIBER_URL, "subscriber_ids"),
                            (TGID_FILE, TGID_URL, "talkgroup_ids")):
@@ -1150,7 +1140,7 @@ if __name__ == '__main__':
         timeout.start(10).addErrback(error_hdl)
 
     # files update loop
-    file_loop = task.LoopingCall(file_update)
+    file_loop = task.LoopingCall(files_update)
     file_loop.start(1800).addErrback(error_hdl)
 
     # Clean DB tables loop
@@ -1165,7 +1155,6 @@ if __name__ == '__main__':
     # Connect to HBlink
     reactor.connectTCP(HBLINK_IP, HBLINK_PORT, reportClientFactory())
 
-
     # HBmonitor does not require the use of SSL as no "sensitive data" is sent to it but if you want to use SSL:
     # create websocket server to push content to clients via SSL https://
     # the web server apache2 should be configured with a signed certificate for example Letsencrypt
@@ -1178,26 +1167,26 @@ if __name__ == '__main__':
     #dashboard_server.protocol = dashboard
     #reactor.listenSSL(9000, dashboard_server,certificate)
 
-    _useSSL = False
-    _websocketPort = 9000
-    if 'USE_SSL' in vars() or 'USE_SSL' in globals():
-        _useSSL = USE_SSL
+    if 'USE_SSL' not in globals():
+        USE_SSL = False
+        SSL_PRIVATEKEY = None
+        SSL_CERTIFICATE = None
 
-    if 'WEBSOCKET_PORT' in vars() or 'WEBSOCKET_PORT' in globals():
-        _websocketPort = WEBSOCKET_PORT
+    if 'WEBSOCKET_PORT' not in globals():
+        WEBSOCKET_PORT = 9000
 
-    logger.info('Starting webserver on port %d with SSL=%s' % (_websocketPort, _useSSL))
+    logger.info(f'Starting webserver on port {WEBSOCKET_PORT} with SSL = {USE_SSL}')
 
-    if _useSSL:
+    if USE_SSL:
         from twisted.internet import ssl
         certificate = ssl.DefaultOpenSSLContextFactory(SSL_PRIVATEKEY, SSL_CERTIFICATE)
-        dashboard_server = dashboardFactory('wss://*:%d' % _websocketPort)
+        dashboard_server = dashboardFactory(f'wss://*:{WEBSOCKET_PORT}')
         dashboard_server.protocol = dashboard
-        reactor.listenSSL(_websocketPort, dashboard_server, certificate)
+        reactor.listenSSL(WEBSOCKET_PORT, dashboard_server, certificate)
 
     else:
-        dashboard_server = dashboardFactory('ws://*:%d' % _websocketPort)
+        dashboard_server = dashboardFactory(f'ws://*:{WEBSOCKET_PORT}')
         dashboard_server.protocol = dashboard
-        reactor.listenTCP(_websocketPort, dashboard_server)
+        reactor.listenTCP(WEBSOCKET_PORT, dashboard_server)
 
     reactor.run()

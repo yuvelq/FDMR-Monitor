@@ -3,13 +3,13 @@
 ***This version has been forked from HBMonitor V2 by SP2ONG 2019-2022***
 
 Some of the changes in FDMR Monitor:
+- It's integrated with SQLite database.
 - Improved usage of memory and CPU.
 - Broadcasting groups has been added to save server's resources.
-- JavaScript code to support broadcasting groups.
+- JavaScript code was added to support broadcasting groups.
 - The code has been updated to HTML5.
-- Page that shows static and single TG.
-- Data qso are showed in the dashboard.
-
+- Static and single TG's page added.
+- Data QSO's are showed in the dashboard.
 
 FDMR Monitor has been tested on Debian v9, v10 and v11
 
@@ -34,8 +34,8 @@ php 7.x running on the server.
         http://yourserverhost.org/
 
     You will find a configuration file inside 
-    html/include/ in the root of the web server, called config.php in this file you can  
-    set the color theme and name for your Dashboard.
+    html/include/ in the root of the web server, called config.php, in this file you can  
+    set the color, theme and name for your Dashboard.
     
     Also you can define the height of the Server Activity 
     window: 45px; 1 row, 60px 2 rows, 80px 3 rows:
@@ -55,6 +55,12 @@ php 7.x running on the server.
     (if you have multiple bridges displaying this information will increase the CPU load, 
     try to use BRIDGES_INC = False in config.py) 
     
+    If for a reason you want to reset the database to the original values:
+    sudo systemctl stop fdmr_mon
+    sudo rm monit.db
+    sudo python3 moni_db.py
+    sudo systemct start fdmr_mon
+
 
 ---
 

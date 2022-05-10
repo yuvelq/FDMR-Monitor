@@ -1,4 +1,4 @@
-CONFIG_INC      = True                           # Include HBlink stats
+
 HOMEBREW_INC    = True                           # Display Homebrew Peers status
 LASTHEARD_INC   = True                           # Display lastheard table on main page
 LASTHEARD_ROWS  = 20
@@ -16,26 +16,24 @@ CLIENT_TIMEOUT  = 0                              # Clients are timed out after t
 OPB_FILTER = ""
 
 # Files and stuff for loading alias files for mapping numbers to names
-PATH            = './data/'                      # MUST END IN '/'
+PATH            = './data/'
 PEER_FILE       = 'peer_ids.json'                # Will auto-download 
 SUBSCRIBER_FILE = 'subscriber_ids.csv'           # Will auto-download 
-TGID_FILE       = 'talkgroup_ids.json'           # User provided
+TGID_FILE       = 'talkgroup_ids.json'           # Will auto-download
 LOCAL_SUB_FILE  = 'local_subscriber_ids.json'    # User provided (optional, leave '' if you don't use it)
 LOCAL_PEER_FILE = 'local_peer_ids.json'          # User provided (optional, leave '' if you don't use it)
 LOCAL_TGID_FILE = 'local_talkgroup_ids.json'     # User provided (optional, leave '' if you don't use it)
-LASTHEARD_CACHE = 'lastheard.pkl'   
 
-FILE_RELOAD     = 15                              # Number of days before we reload DMR-MARC database files
+FILE_RELOAD     = 15                             # Number of days before we reload DMR-MARC database files
 PEER_URL        = 'https://database.radioid.net/static/rptrs.json'
 SUBSCRIBER_URL  = 'https://database.radioid.net/static/user.csv'
 TGID_URL        = 'http://downloads.freedmr.uk/downloads/talkgroup_ids.json'
 
 # Settings for log files
-LOG_PATH        = './log/'                       # MUST END IN '/'
+LOG_PATH        = './log/'
 LOG_NAME        = 'hbmon.log'
 
 WEBSOCKET_PORT  = 9000
 USE_SSL         = False
 SSL_CERTIFICATE = './ssl/cert.pem'
 SSL_PRIVATEKEY  = './ssl/key.pem'
-
