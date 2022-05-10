@@ -932,10 +932,10 @@ def process_message(_bmessage):
             db_conn.ins_lstheard_log(None, p[0], p[3], p[8], p[6])
 
         else:
-            logger.warning('Unknown log message.')
+            logger.warning(f'Unknown log message: {_message}')
 
     elif opcode == OPCODE['SERVER_MSG']:
-        logger.info(f'SERVER MESSAGE: {_message}')
+        logger.info(f'SERVER MSG: {_message}')
 
     else:
         logger.warning(f'got unknown opcode: {repr(opcode)}, message: {_message}')
