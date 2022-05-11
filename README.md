@@ -55,7 +55,7 @@ php 7.x running on the server.
     (if you have multiple bridges displaying this information will increase the CPU load, 
     try to use BRIDGES_INC = False in config.py) 
     
-    If for a reason you want to reset the database to the original values:
+    If for any reason you want to reset the database to the original values:
     sudo systemctl stop fdmr_mon
     sudo rm monit.db
     sudo python3 moni_db.py
