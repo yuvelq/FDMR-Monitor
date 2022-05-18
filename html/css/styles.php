@@ -264,7 +264,7 @@ a.button {
 
 body {
   margin: auto;
-  width: 1100px;
+  width: 1200px;
   background-color: #d0d0d0;
   font: 10pt arial, sans-serif;
   text-align: center;
@@ -293,7 +293,7 @@ fieldset {
 }
 
 fieldset.big{
-  width: 1100;
+  width: 1100px;
 }
 fieldset.med {
   width: 900px;
@@ -304,7 +304,7 @@ fieldset.small {
 legend {
   margin-left: 20px;
   text-align: left;
-  padding: 0 10px;
+  padding: 0 5px;
 }
 
 /* Waiting for server data tabble */
