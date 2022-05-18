@@ -3,13 +3,15 @@
 ***This version has been forked from HBMonitor V2 by SP2ONG 2019-2022***
 
 Some of the changes in FDMR Monitor:
+- TG Count page added.
+- Config file added.
 - It's integrated with SQLite database.
 - Improved usage of memory and CPU.
 - Broadcasting groups has been added to save server's resources.
 - JavaScript code was added to support broadcasting groups.
-- The code has been updated to HTML5.
+- The code has been  fully updated to HTML5.
 - Static and single TG's page added.
-- Data QSO's are showed in the dashboard.
+- Data QSO's now are showed in the dashboard.
 
 FDMR Monitor has been tested on Debian v9, v10 and v11
 
@@ -21,34 +23,46 @@ php 7.x running on the server.
     cd FDMR-Monitor
     sudo chmod +x install.sh
     sudo ./install.sh
-    sudo cp config-SAMPLE.py config.py
-    - Edit config.py and adjust it to your server configuration:
-        sudo nano config.py
+    sudo cp fdmr-mon_SAMPLE.cfg fdmr-mon.cfg
+    - Edit fdmr-mon.cfg and adjust it to your server configuration:
+      sudo nano fdmr-mon.cfg
+
+    - Give readig permission to the config file:
+      sudo chmod 644 fdmr-mon.cfg
 
     Copy the contents of the /opt/FDMR-Monitor/html directory to 
     the web server directory.
-    - This example works for Apache server:
-        sudo cp /opt/FDMR-Monitor/html/* /var/www/html/ -r
+    - This example will work for Apache server:
+      sudo cp /opt/FDMR-Monitor/html/* /var/www/html/ -r
 
     With this configuration you server will be available at:
-        http://yourserverhost.org/
+      http://yourserverhost.org/
 
-    You will find a configuration file inside 
-    html/include/ in the root of the web server, called config.php, in this file you can  
-    set the color, theme and name for your Dashboard.
-    
-    Also you can define the height of the Server Activity 
-    window: 45px; 1 row, 60px 2 rows, 80px 3 rows:
-    define("HEIGHT_ACTIVITY","45px");
+    Now you can configure the theme color and name for your Dashboard from the config.cfg file also
+    you can define the height of the Server Activity 
+    window: 45 1 row, 60 2 rows, 80 3 rows:
+    HEIGHT_ACTIVITY = 45
 
-    In the same directory you will find a buttons.html file where you can add new buttons.
+    Now if you set TGCOUNT_INC to True the button will be added automatically
+    If you want to modify or add any other button you will find a buttons.php file in the root of your
+    web server.
     
-    The logo image you can replace with file image in html directory  img/logo.png
-    sudo cp utils/logrotate/fdmr_monitor /etc/logrotate.d/
-    sudo cp utils/fdmr_mon.service /lib/systemd/system/
-    sudo systemctl enable fdmr_mon
-    sudo systemctl start fdmr_mon
-    sudo systemctl status fdmr_mon
+    You can replace the logo with an image of your preference in the img/ directory img/logo.png
+    
+    - This will rotate the log file:
+      sudo cp utils/logrotate/fdmr_mon /etc/logrotate.d/
+
+    - Add the systemd file:
+      sudo cp utils/fdmr_mon.service /lib/systemd/system/
+
+    - Enable the monitor to start automatically after reboot:
+      sudo systemctl enable fdmr_mon
+
+    - You can start, stop, or restart with the next commands:
+      sudo systemctl start fdmr_mon
+      sudo systemctl stop fdmr_mon
+      sudo systemctl restart fdmr_mon
+
     forward TCP port 9000 and web server port in firewall
         
     I recommend that you do not use the BRIDGE_INC = True option to display bridge information 
@@ -57,8 +71,8 @@ php 7.x running on the server.
     
     If for any reason you want to reset the database to the original values:
     sudo systemctl stop fdmr_mon
-    sudo rm monit.db
-    sudo python3 moni_db.py
+    sudo rm mon.db
+    sudo python3 mon_db.py
     sudo systemct start fdmr_mon
 
 

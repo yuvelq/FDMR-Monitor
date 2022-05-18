@@ -1,6 +1,7 @@
 *.pyc
-config.py
 *.log
 *.json
 *.csv
 *.db
+fdmr-mon.cfg
+venv

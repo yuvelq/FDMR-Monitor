@@ -1,0 +1,28 @@
+<fieldset class="big">
+  <legend><b>.: Most Used TGs :.</b></legend>
+{% if _table|length > 0 %}
+  <table class="log">
+    <tr>
+      <th style='width: 95px;'>TG Number</th>
+      <th style='width: 515px;'>Talk Group Name</th>
+      <th style='width: 85px;'>Number of QSO</th>
+      <th style='width: 95px;'>Total QSO Time</th>
+      <th style='width: 310px;'>Most Seen Callsign</th>
+    </tr>
+    {% for itm in _table %}
+    <tr>
+      <td class="txt-b5651d"><b>{{ itm[0] }}</b></td>
+      <td class="txt-green"><b>{{ itm[1] }}</b></td>
+      <td>{{ itm[2] }}</td>
+      <td><b>{{ itm[3] }}</b></td>
+      <td class="txt-002d62"><b>{{ itm[4]|join(' - ') }}</b></td>
+    </tr>
+    {% endfor %}
+  </table>
+  <br><div><b>This table will update every minute.</b></div>
+{% else %}
+  <table class="w4data">
+    <tr><td><b>Waiting for data from the Server...</b></td></tr>
+  </table>
+{% endif %}
+</fieldset>

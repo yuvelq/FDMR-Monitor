@@ -32,43 +32,70 @@ __email__      = 'adm@dmr-peru.pe'
 
 logger = logging.getLogger("fdmr-mon")
 
+
+# Seconds to a friendly time format
+def sec_time(_time):
+    _time = int(_time)
+    seconds = _time % 60
+    minutes = int(_time/60) % 60
+    hours = int(_time/60/60) % 24
+    if hours:
+        return f'{hours}h {minutes}m'
+    elif minutes:
+        return f'{minutes}m {seconds}s'
+    else:
+        return f'{seconds}s'
+
+
 class MoniDB:
-    def __init__(self):
-        self.db = adbapi.ConnectionPool("sqlite3", "monit.db", check_same_thread=False)
+    def __init__(self, db_name):
+        self.db = adbapi.ConnectionPool("sqlite3", db_name, check_same_thread=False)
 
     @inlineCallbacks
     def create_tables(self):
         try:
             def create_tbl(txn):
                 txn.execute('''CREATE TABLE IF NOT EXISTS talkgroup_ids (
-                                        id INT PRIMARY KEY UNIQUE NOT NULL, 
-                                        callsign VARCHAR(255) NOT NULL)''')
+                            id INT PRIMARY KEY UNIQUE NOT NULL, 
+                            callsign VARCHAR(255) NOT NULL)''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS subscriber_ids (
-                                        id INT PRIMARY KEY UNIQUE NOT NULL,
-                                        callsign VARCHAR(255) NOT NULL,
-                                        name VARCHAR(255) NOT NULL)''')
+                            id INT PRIMARY KEY UNIQUE NOT NULL,
+                            callsign VARCHAR(255) NOT NULL,
+                            name VARCHAR(255) NOT NULL)''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS peer_ids (
-                                        id INT PRIMARY KEY UNIQUE NOT NULL,
-                                        callsign VARCHAR(255) NOT NULL)''')
+                            id INT PRIMARY KEY UNIQUE NOT NULL,
+                            callsign VARCHAR(255) NOT NULL)''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS last_heard (
-                                        date_time TEXT NOT NULL,
-                                        qso_time DECIMAL(3,2),
-                                        qso_type VARCHAR(20) NOT NULL,
-                                        system VARCHAR(50) NOT NULL,
-                                        tg_num INT NOT NULL,
-                                        dmr_id INT PRIMARY KEY UNIQUE NOT NULL)''')
+                            date_time TEXT NOT NULL,
+                            qso_time DECIMAL(3,2),
+                            qso_type VARCHAR(20) NOT NULL,
+                            system VARCHAR(50) NOT NULL,
+                            tg_num INT NOT NULL,
+                            dmr_id INT PRIMARY KEY UNIQUE NOT NULL)''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS lstheard_log (
-                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                        date_time TEXT NOT NULL ,
-                                        qso_time DECIMAL(3,2),
-                                        qso_type VARCHAR(20) NOT NULL,
-                                        system VARCHAR(50) NOT NULL,
-                                        tg_num INT NOT NULL,
-                                        dmr_id INT NOT NULL)''')
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            date_time TEXT NOT NULL,
+                            qso_time DECIMAL(3,2),
+                            qso_type VARCHAR(20) NOT NULL,
+                            system VARCHAR(50) NOT NULL,
+                            tg_num INT NOT NULL,
+                            dmr_id INT NOT NULL)''')
+
+                txn.execute('''CREATE TABLE IF NOT EXISTS tg_count (
+                            date TEXT NOT NULL,
+                            tg_num INT PRIMARY KEY NOT NULL,
+                            qso_count INT NOT NULL,
+                            qso_time DECIMAL(4,2) NOT NULL)''')
+
+                txn.execute('''CREATE TABLE IF NOT EXISTS user_count (
+                            date TEXT NOT NULL,
+                            tg_num INT NOT NULL,
+                            dmr_id INT NOT NULL,
+                            qso_time DECIMAL(4,2) NOT NULL)''')
 
             yield self.db.runInteraction(create_tbl)
             logger.info("Tables created successfully.")
@@ -82,13 +109,17 @@ class MoniDB:
             def populate(txn, wipe_tbl):
                 if table == "talkgroup_ids":
                     stm = "INSERT OR IGNORE INTO talkgroup_ids VALUES (?, ?)"
+                    w_stm = "DELETE FROM talkgroup_ids"
                 elif table == "subscriber_ids":
                     stm = stm = "INSERT OR IGNORE INTO subscriber_ids VALUES (?, ?, ?)"
+                    w_stm = "DELETE FROM subscriber_ids"
                 elif table == "peer_ids":
                     stm = "INSERT OR IGNORE INTO peer_ids VALUES (?, ?)"
- 
+                    w_stm = "DELETE FROM peer_ids"
+
                 if wipe_tbl:
-                    txn.execute(f"DELETE FROM {table}")
+                    txn.execute(w_stm)
+
                 result = txn.executemany(stm, lst_data).rowcount
                 if result > 0:
                     logger.info(f"{result} entries added to: {table} table from: {_file}")
@@ -120,8 +151,9 @@ class MoniDB:
     @inlineCallbacks
     def ins_lstheard(self, qso_time, qso_type, system, tg_num, dmr_id):
         try:
-            yield self.db.runOperation("INSERT OR REPLACE INTO last_heard VALUES(datetime('now', 'localtime'), ?, ?, ?, ?, ?)",
-                                       (qso_time, qso_type, system, tg_num, dmr_id))
+            yield self.db.runOperation(
+                "INSERT OR REPLACE INTO last_heard VALUES (datetime('now', 'localtime'), ?, ?, ?, ?, ?)",
+                (qso_time, qso_type, system, tg_num, dmr_id))
 
         except Exception as err:
             logger.error(f"ins_lstheard: {err}, {type(err)}")
@@ -129,9 +161,10 @@ class MoniDB:
     @inlineCallbacks
     def ins_lstheard_log(self, qso_time, qso_type, system, tg_num, dmr_id):
         try:
-            yield self.db.runOperation('''INSERT INTO lstheard_log(date_time, qso_time, qso_type, system, tg_num, dmr_id)
-                                        VALUES(datetime('now', 'localtime'), ?, ?, ?, ?, ?)''',
-                                       (qso_time, qso_type, system, tg_num, dmr_id))
+            yield self.db.runOperation(
+                '''INSERT INTO lstheard_log (date_time, qso_time, qso_type, system, tg_num, dmr_id)
+                VALUES(datetime('now', 'localtime'), ?, ?, ?, ?, ?)''',
+                (qso_time, qso_type, system, tg_num, dmr_id))
 
         except Exception as err:
             logger.error(f"ins_lstheard_log: {err}, {type(err)}")
@@ -158,15 +191,15 @@ class MoniDB:
         try:
             if _table == "last_heard":
                 stm = '''SELECT date_time, qso_time, qso_type, system, tg_num,
-                        (SELECT callsign FROM talkgroup_ids WHERE id = tg_num), dmr_id,
-                        (SELECT json_array(callsign, name) FROM subscriber_ids WHERE id = dmr_id)
-                        FROM last_heard ORDER BY date_time DESC LIMIT ?'''
+                    (SELECT callsign FROM talkgroup_ids WHERE id = tg_num), dmr_id,
+                    (SELECT json_array(callsign, name) FROM subscriber_ids WHERE id = dmr_id)
+                    FROM last_heard ORDER BY date_time DESC LIMIT ?'''
 
             elif _table == "lstheard_log":
                 stm = '''SELECT date_time, qso_time, qso_type, system, tg_num,
-                        (SELECT callsign FROM talkgroup_ids WHERE id = tg_num), dmr_id,
-                        (SELECT json_array(callsign, name) FROM subscriber_ids WHERE id = dmr_id)
-                        FROM lstheard_log ORDER BY date_time DESC LIMIT ?'''
+                    (SELECT callsign FROM talkgroup_ids WHERE id = tg_num), dmr_id,
+                    (SELECT json_array(callsign, name) FROM subscriber_ids WHERE id = dmr_id)
+                    FROM lstheard_log ORDER BY date_time DESC LIMIT ?'''
 
             result = yield self.db.runQuery(stm, (_row_num,))
             if result:
@@ -190,17 +223,71 @@ class MoniDB:
         try:
             if _table == "last_heard":
                 stm = '''DELETE FROM last_heard WHERE dmr_id NOT IN
-                        (SELECT dmr_id FROM last_heard ORDER BY date_time DESC LIMIT ?)'''
+                    (SELECT dmr_id FROM last_heard ORDER BY date_time DESC LIMIT ?)'''
 
             elif _table == "lstheard_log":
                 stm = '''DELETE FROM lstheard_log WHERE id NOT IN
-                        (SELECT id FROM lstheard_log ORDER BY date_time DESC LIMIT ?)'''
+                    (SELECT id FROM lstheard_log ORDER BY date_time DESC LIMIT ?)'''
 
             yield self.db.runOperation(stm, (int(_row_num * 1.25),))
             logger.info(f"{_table} DB table cleaned successfully.")
 
         except Exception as err:
             logger.error(f"clean_tables: {err}, {type(err)}")
+
+    @inlineCallbacks
+    def ins_tgcount(self, _tg_num, _dmr_id, _qso_time):
+        try:
+            def db_actn(txn):
+                txn.execute('''INSERT INTO tg_count VALUES (date('now', 'localtime'), ?, 1, ?)
+                            ON CONFLICT DO UPDATE SET qso_time = (qso_time + ?),
+                            qso_count = (qso_count+1)''', (_tg_num, _qso_time, _qso_time))
+
+                res = txn.execute('''UPDATE user_count SET qso_time = (qso_time + ?) WHERE
+                                  tg_num = ? and dmr_id = ?''', (_qso_time, _tg_num, _dmr_id)).rowcount
+                if not res:
+                    txn.execute('''INSERT INTO user_count VALUES(date('now', 'localtime'), ?, ?, ?)''',
+                                (_tg_num, _dmr_id, _qso_time))
+
+            yield self.db.runInteraction(db_actn)
+
+        except Exception as err:
+            logger.error(f"ins_tgcount: {err}, {type(err)}")
+
+    @inlineCallbacks
+    def slct_tgcount(self, _row_num):
+        try:
+            rows = yield self.db.runQuery(
+                '''SELECT tg_num, ifnull(callsign, ''), qso_count, qso_time FROM tg_count LEFT JOIN talkgroup_ids
+                ON talkgroup_ids.id = tg_count.tg_num ORDER BY qso_time DESC LIMIT ?''', (_row_num,))
+            if rows:
+                res_lst = []
+                for tg_num, name, qso_c, qso_time in rows:
+                    res = yield self.db.runQuery(
+                        '''SELECT ifnull(callsign, "N0CALL") FROM user_count 
+                        LEFT JOIN subscriber_ids ON subscriber_ids.id = user_count.dmr_id
+                        WHERE tg_num = ? ORDER BY qso_time DESC LIMIT 4''', (tg_num,))
+
+                    res_lst.append((tg_num, name, qso_c, sec_time(qso_time), tuple([ite[0] for ite in res])))
+                returnValue(res_lst)
+            else:
+                returnValue(None)
+
+        except Exception as err:
+            logger.error(f"slct_tgcount: {err}, {type(err)}")
+
+    @inlineCallbacks
+    def clean_tgcount(self):
+        try:
+            yield self.db.runOperation(
+                "DELETE FROM tg_count WHERE date IS NOT date('now', 'localtime')")
+            yield self.db.runOperation(
+                "DELETE FROM user_count WHERE date IS NOT date('now', 'localtime')")
+
+            logger.info("TG Count tables cleaned successfully")
+
+        except Exception as err:
+            logger.error(f"clean_tgcount: {err}, {type(err)}")
 
 
 if __name__ == '__main__':
@@ -210,7 +297,7 @@ if __name__ == '__main__':
         level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
     # Create an instance of MoniDB
-    test_db = MoniDB()
+    test_db = MoniDB("mon.db")
 
     # Create tables in db
     test_db.create_tables()
