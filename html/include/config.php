@@ -3,7 +3,7 @@
 // Report all errors except E_NOTICE
 error_reporting(E_ALL & ~E_NOTICE);
 
-$path2config = "/opt/FDMR-monitor/fdmr-mon.cfg";
+$path2config = "/opt/FDMR-Monitor/fdmr-mon.cfg";
 
 if (file_exists($path2config)) {
   $config = parse_ini_file($path2config, true);

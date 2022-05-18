@@ -95,7 +95,8 @@ class MoniDB:
                             date TEXT NOT NULL,
                             tg_num INT NOT NULL,
                             dmr_id INT NOT NULL,
-                            qso_time DECIMAL(4,2) NOT NULL)''')
+                            qso_time DECIMAL(4,2) NOT NULL,
+                            UNIQUE(tg_num, dmr_id))''')
 
             yield self.db.runInteraction(create_tbl)
             logger.info("Tables created successfully.")
@@ -240,14 +241,12 @@ class MoniDB:
         try:
             def db_actn(txn):
                 txn.execute('''INSERT INTO tg_count VALUES (date('now', 'localtime'), ?, 1, ?)
-                            ON CONFLICT DO UPDATE SET qso_time = (qso_time + ?),
-                            qso_count = (qso_count+1)''', (_tg_num, _qso_time, _qso_time))
+                            ON CONFLICT (tg_num) DO UPDATE SET qso_time = qso_time + ?,
+                            qso_count = qso_count + 1''', (_tg_num, _qso_time, _qso_time))
 
-                res = txn.execute('''UPDATE user_count SET qso_time = (qso_time + ?) WHERE
-                                  tg_num = ? and dmr_id = ?''', (_qso_time, _tg_num, _dmr_id)).rowcount
-                if not res:
-                    txn.execute('''INSERT INTO user_count VALUES(date('now', 'localtime'), ?, ?, ?)''',
-                                (_tg_num, _dmr_id, _qso_time))
+                txn.execute('''INSERT INTO user_count VALUES(date('now', 'localtime'), ?, ?, ?)
+                            ON CONFLICT DO (tg_num, dmr_id) UPDATE SET qso_time = qso_time + ?''',
+                            (_tg_num, _dmr_id, _qso_time, _qso_time))
 
             yield self.db.runInteraction(db_actn)
 
@@ -258,8 +257,9 @@ class MoniDB:
     def slct_tgcount(self, _row_num):
         try:
             rows = yield self.db.runQuery(
-                '''SELECT tg_num, ifnull(callsign, ''), qso_count, qso_time FROM tg_count LEFT JOIN talkgroup_ids
-                ON talkgroup_ids.id = tg_count.tg_num ORDER BY qso_time DESC LIMIT ?''', (_row_num,))
+                '''SELECT tg_num, ifnull(callsign, ''), qso_count, qso_time FROM tg_count
+                LEFT JOIN talkgroup_ids ON talkgroup_ids.id = tg_count.tg_num ORDER BY qso_time
+                DESC LIMIT ?''', (_row_num,))
             if rows:
                 res_lst = []
                 for tg_num, name, qso_c, qso_time in rows:
@@ -292,7 +292,7 @@ class MoniDB:
 
 if __name__ == '__main__':
     from twisted.internet import reactor
-    
+
     logging.basicConfig(
         level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 

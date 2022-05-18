@@ -72,13 +72,12 @@ OPCODE = {
     }
 
 # Make config
-CONF = mk_config("config_sample.cfg")
+CONF = mk_config("fdmr-mon.cfg")
 
 # Global Variables:
 CONFIG = {}
 # Number of rows showed on the lastheard log page
 LASTHEARD_LOG_ROWS = 70
-TGCOUNT_ROWS = 20
 CTABLE = {
     "MASTERS": {},
     "PEERS": {},
@@ -1106,7 +1105,7 @@ class dashboard(WebSocketServerProtocol):
                 elif group == "lsthrd_log":
                     render_fromdb("lstheard_log", LASTHEARD_LOG_ROWS, self)
                 elif group == "tgcount" and CONF["GLOBAL"]["TGC_INC"]:
-                    render_fromdb("tgcount", TGCOUNT_ROWS, self)
+                    render_fromdb("tgcount", CONF["GLOBAL"]["TGC_ROWS"], self)
                 elif group == "log":
                     for _message in LOGBUF:
                         if _message:

@@ -57,7 +57,7 @@ def mk_config(cfg_file):
 
         for section in conf:
             if section == "GLOBAL":
-                CONF['GLOBAL'] = {
+                CONF["GLOBAL"] = {
                     "HB_INC": conf.getboolean(section, "HOMEBREW_INC"),
                     "LH_INC": conf.getboolean(section, "LASTHEARD_INC"),
                     "LH_ROWS": conf.getint(section, "LASTHEARD_ROWS"),
