@@ -197,13 +197,15 @@ def fill_table(_path, _file, _table, wipe_tbl=True):
 
 
 @inlineCallbacks
-# Update table
+# Update tables
 def update_table(_path, _file, _url, _stale, _table):
     try:
+        global not_in_db
         count = yield db_conn.table_count(_table)
         result = yield deferToThread(try_download, _path, _file, _url, _stale)
         if "successfully" in result or count < 1:
             fill_table(_path, _file, _table)
+            not_in_db = []
             lcl_lstmod[_table] = None
             update_local(_table)
         else:
@@ -320,7 +322,7 @@ def db2dict(_id, _table):
         _dict = talkgroup_ids
 
     if _id in _dict or _id in not_in_db or _id in act_query:
-        return
+        return None
     act_query.append(_id)
 
     result = yield db_conn.slct_2dict(_id, _table)
