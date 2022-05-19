@@ -44,23 +44,23 @@ if ($config and array_key_exists("HEIGHT_ACTIVITY", $config["GLOBAL"])) {
 
 // Define THEME_COLOR
 if ($config and array_key_exists("THEME_COLOR", $config["GLOBAL"])) {
-  $theme = $config["GLOBAL"]["THEME_COLOR"];
+  $theme = strtolower($config["GLOBAL"]["THEME_COLOR"]);
   $tc = null;
-  if ($theme == "Green") {
+  if ($theme == "green") {
     $tc = "background-color:#4a8f3c;color:white;";
-  } elseif ($theme == "Blue1") {
+  } elseif ($theme == "blue1") {
     $tc = "background-color:#2A659A;color:white;";
-  } elseif ($theme == "Blue2") {
+  } elseif ($theme == "blue2") {
     $tc = "background-color:#43A6DF;color:white;";
-  } elseif ($theme == "BlueGradient1") {
+  } elseif ($theme == "bluegradient1") {
     $tc = "background-image: linear-gradient(to bottom, #337ab7 0%, #265a88 100%);color:white;";
-  } elseif ($theme == "BlueGradient2") {
+  } elseif ($theme == "bluegradient2") {
     $tc = "background-image: linear-gradient(to bottom, #3333cc 0%, #265a88 100%);color:white;";
-  } elseif ($theme == "RedGradient") {
+  } elseif ($theme == "redgradient") {
     $tc = "background-image:linear-gradient(0deg, rgba(251,0,0,1) 0%, rgba(255,131,131,1) 50%, rgba(255,255,255,1) 100%);color:black;";
-  } elseif ($theme == "GreyGradient") {
+  } elseif ($theme == "greygradient") {
     $tc = "background-image: linear-gradient(to bottom, #3b3b3b 10%, #808080 100%);color:white;";
-  } elseif ($theme == "GreenGradient") {
+  } elseif ($theme == "greengradient") {
     $tc = "background-image:linear-gradient(to bottom right,#d0e98d, #4e6b00);color:black;";
   }
   if ($tc) {
