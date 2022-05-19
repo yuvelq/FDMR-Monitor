@@ -3,4 +3,6 @@ dmr_utils3
 bitstring
 autobahn
 jinja2==2.11.3
-markupsafe==2.0.1
+MarkupSafe==2.0.1
+pyOpenSSL==22.0.0
+service-identity==21.1.0

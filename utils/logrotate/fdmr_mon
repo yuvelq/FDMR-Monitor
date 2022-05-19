@@ -1,4 +1,4 @@
-/opt/FDMR-Monitor/log/hbmon.log {
+/opt/FDMR-Monitor/log/fdmr-mon.log {
     daily
     rotate 7
     size 10M

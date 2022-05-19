@@ -1,0 +1,14 @@
+{
+  "results": [
+        {
+      "tgid": 1,
+      "callsign": "TG Local 1",
+      "id": "1"
+    },
+    {
+      "tgid": 2,
+      "callsign": "TG Local 2",
+      "id": "2"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-<?php include_once 'include/config.php'; ?>
+<?php include_once 'include/config.php';?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -12,7 +12,7 @@
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
   <h2><?php echo REPORT_NAME;?></h2>
-  <div><?php include_once 'buttons.html'; ?></div>
+  <div><?php include_once 'buttons.php';?></div>
   <noscript>You must enable JavaScript</noscript>
   <!-- Linked systems table -->
   <p id="lnksys"></p>

@@ -7,6 +7,8 @@
 
 <a class="button" href="statictg.php">Static TG</a>
 
+<?php if(TGCOUNT_INC){echo '<a class="button" href="tgcount.php">TG Count</a>';}?>
+
 <a class="button" href="moni.php">Monitor</a>
 
 <a class="button" href="sysinfo.php">System Info</a>
