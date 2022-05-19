@@ -3,8 +3,8 @@
 header("Content-type: text/css");
 include_once '../include/config.php';
 ?>
-.link { <?= THEME_COLOR ?> }
-.dropbtn { <?= THEME_COLOR ?> }
+.link { <?php THEME_COLOR;?> }
+.dropbtn { <?php THEME_COLOR;?> }
 
 table, td, th {
   border: 0.8px solid #d0d0d0; 
@@ -13,7 +13,7 @@ table, td, th {
   border-collapse: collapse;
 }
 th {
-  <?= THEME_COLOR."\n" ?>
+  <?php echo THEME_COLOR."\n";?>
 }
 
 #log {
@@ -34,7 +34,7 @@ table.active-qso {
   border-collapse: separate;
 }
 .active-qso th {
-  <?= THEME_COLOR."\n" ?>
+  <?php THEME_COLOR."\n";?>
   border-radius: 10px;
   font-size : 9pt;
   font-weight: bold;
@@ -42,7 +42,7 @@ table.active-qso {
 }
 .active-qso td {
   line-height: 1.3em;
-  height: <?= HEIGHT_ACTIVITY.";\n" ?>
+  height: <?php HEIGHT_ACTIVITY.";\n";?>
   border-radius: 10px;
   border: 1px solid LightGrey;
   background-color: #f9f9f9f9;
@@ -200,7 +200,7 @@ a:active {
   visibility: visible;
 }
 a.button {
-  <?= THEME_COLOR."\n" ?>
+  <?php echo THEME_COLOR."\n";?>
   text-shadow: none;
   border: none;
   padding: 8px 10px;

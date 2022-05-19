@@ -245,7 +245,7 @@ class MoniDB:
                             qso_count = qso_count + 1''', (_tg_num, _qso_time, _qso_time))
 
                 txn.execute('''INSERT INTO user_count VALUES(date('now', 'localtime'), ?, ?, ?)
-                            ON CONFLICT DO (tg_num, dmr_id) UPDATE SET qso_time = qso_time + ?''',
+                            ON CONFLICT (tg_num, dmr_id) DO UPDATE SET qso_time = qso_time + ?''',
                             (_tg_num, _dmr_id, _qso_time, _qso_time))
 
             yield self.db.runInteraction(db_actn)
