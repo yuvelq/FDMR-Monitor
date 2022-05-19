@@ -9,7 +9,7 @@ Some of the changes in FDMR Monitor:
 - Improved usage of memory and CPU.
 - Broadcasting groups has been added to save server's resources.
 - JavaScript code was added to support broadcasting groups.
-- The code has been  fully updated to HTML5.
+- The code has been updated to HTML5.
 - Static and single TG's page added.
 - Data QSO's now are showed in the dashboard.
 
