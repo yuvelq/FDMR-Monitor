@@ -53,7 +53,7 @@ php 7.x running on the server.
       sudo cp utils/logrotate/fdmr_mon /etc/logrotate.d/
 
     - Add the systemd file:
-      sudo cp utils/fdmr_mon.service /lib/systemd/system/
+      sudo cp utils/systemd/fdmr_mon.service /lib/systemd/system/
 
     - Enable the monitor to start automatically after reboot:
       sudo systemctl enable fdmr_mon
