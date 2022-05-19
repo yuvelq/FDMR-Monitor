@@ -54,8 +54,8 @@ if (isset($_SESSION["lang"])) {
 </head>
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
-  <h2><?php echo REPORT_NAME; ?></h2>
-  <div><?php include_once "buttons.php"; ?></div>
+  <h2><?php echo REPORT_NAME?></h2>
+  <div><?php include_once "buttons.php"?></div>
   <fieldset class="selfserv">
     <legend><b>.: Devices :.</b></legend>
     <script>
@@ -66,8 +66,8 @@ if (isset($_SESSION["lang"])) {
     <!-- Language -->
     <form class="lang" method="get" action="" id="form_lang">
       <?=_SELECT_LANG?><select name="lang" onchange="changeLang();">
-      <option value="eng" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "eng"){ echo "selected"; } ?> >English</option>
-      <option value="esp" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "esp"){ echo "selected"; } ?> >Español</option>
+      <option value="eng" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "eng"){echo "selected";}?> >English</option>
+      <option value="esp" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "esp"){echo "selected";}?> >Español</option>
       </select>
     </form>
     

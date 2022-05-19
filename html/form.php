@@ -227,7 +227,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
   <h2><?=REPORT_NAME?></h2>
-  <div><?php include_once "buttons.php"; ?></div>
+  <div><?php include_once "buttons.php"?></div>
   <fieldset class="selfserv" >
     <legend><b>.: Options form :.</b></legend>
     <!-- Language -->
@@ -238,11 +238,11 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
     </script>
     <form class="lang" method="get" action="" id="form_lang" >
       <?=_SELECT_LANG?><select name="lang" onchange="changeLang();">
-      <option value="eng" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "eng"){ echo "selected"; } ?> >English</option>
-      <option value="esp" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "esp"){ echo "selected"; } ?> >Español</option>
+      <option value="eng" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "eng"){echo "selected";}?> >English</option>
+      <option value="esp" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "esp"){echo "selected";}?> >Español</option>
       </select>
     </form>
-    <h3 class="opt-ttl"><?php echo _OPTS.$_SESSION["opt_owner"]; ?></h3>
+    <h3 class="opt-ttl"><?php echo _OPTS.$_SESSION["opt_owner"]?></h3>
     <!-- Options form -->
     <form action="form.php" method="post">
       <!-- TS1 -->
@@ -251,8 +251,8 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       <?php if(in_array($_SESSION["hs_avail"][$_SESSION["opt_owner"]][1], array(2,3,4))){include_once "selfserv/ts2.php";}?>
       <!-- Timer -->
       <h3>Timer: <span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?=_TIMER_INFO?></span></span></h3>
-      <div class="actual"><?=_ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["TIMER="]===""){echo _DEFAULT_STS;}else{echo $_SESSION["opt_base"]["TIMER="]._MINUTES;} ?></span></div>
-      <input type="text" name="timer" pattern="[0-9\s]+" value="<?php if($_SESSION["opt_base"]["TIMER="] === ""){echo "";}else{echo $_SESSION["opt_base"]["TIMER="];} ?>" title="<?=_TIMER_PATT?>">
+      <div class="actual"><?=_ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["TIMER="]===""){echo _DEFAULT_STS;}else{echo $_SESSION["opt_base"]["TIMER="]._MINUTES;}?></span></div>
+      <input type="text" name="timer" pattern="[0-9\s]+" value="<?php if($_SESSION["opt_base"]["TIMER="] === ""){echo "";}else{echo $_SESSION["opt_base"]["TIMER="];}?>" title="<?php echo _TIMER_PATT?>">
       <p class="error"><?=$timerErr?></p>
       <!-- Single mode -->
       <h3>Single:</h3>
@@ -264,7 +264,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       </select>
       <!-- Voice announcements -->
       <h3>Beacon Voice Announcements</h3>
-      <div class="actual"><?=_ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["VOICE="]==""){echo _DEFAULT_STS;}elseif($_SESSION["opt_base"]["VOICE="]=="1"){echo _ENABLED;}else{echo _DISABLED;}?></span></div>
+      <div class="actual"><?php echo _ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["VOICE="]==""){echo _DEFAULT_STS;}elseif($_SESSION["opt_base"]["VOICE="]=="1"){echo _ENABLED;}else{echo _DISABLED;}?></span></div>
       <select name="voice" >
         <option value="default" <?php if($_SESSION["opt_base"]["VOICE="]==""){echo "selected";}?>><?=_DEFAULT?></option>
         <option value="enable" <?php if($_SESSION["opt_base"]["VOICE="]=="1"){echo "selected";}?>><?=_ENABLE?></option>

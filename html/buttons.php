@@ -10,7 +10,7 @@
 <div class="dropdown">
   <button class="dropbtn">Self Service</button>
   <div class="dropdown-content">
-    <?php if(!PRIVATE_NETWORK){echo '<a href="selfservice.php">SelfService</a>';} ?>
+    <?php if(!PRIVATE_NETWORK){echo '<a href="selfservice.php">SelfService</a>';}?>
     <a href="login.php">Login</a>
     <?php 
     if(isset($_SESSION["auth"], $_SESSION["w_dmr_id"], $_SESSION["h_psswd"]) and $_SESSION["auth"]){

@@ -75,8 +75,8 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 </head>
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
-  <h2><?= REPORT_NAME;?></h2>
-  <div><?php include_once "buttons.php"; ?></div>
+  <h2><?php echo REPORT_NAME?></h2>
+  <div><?php include_once "buttons.php"?></div>
   <fieldset class="selfserv">
     <legend><b>.: Self Service :.</b></legend>
     <script>
@@ -87,14 +87,14 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
     <!-- Language -->
     <form class="lang" method="get" action="" id="form_lang" >
       <?=_SELECT_LANG?><select name="lang" onchange="changeLang();" >
-      <option value="eng" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "eng"){ echo "selected"; } ?> >English</option>
-      <option value="esp" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "esp"){ echo "selected"; } ?> >Español</option>
+      <option value="eng" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "eng"){echo "selected";}?> >English</option>
+      <option value="esp" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "esp"){echo "selected";}?> >Español</option>
       </select>
     </form>
-    <p style="text-align: left; margin: 15px 25px;"><?=_NOTE_MAIN?></p>
+    <p style="text-align: left; margin: 15px 25px;"><?php echo _NOTE_MAIN?></p>
     <!-- Logged in devices info -->
-    <div class="show-data"><?= $data2show ?></div>
-    <div><?= _TRY_LOGIN ?></div>
+    <div class="show-data"><?php echo $data2show?></div>
+    <div><?php echo _TRY_LOGIN?></div>
   </fieldset>
   <footer>
     <p>
