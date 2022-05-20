@@ -73,7 +73,7 @@ php 7.x running on the server.
     sudo systemctl stop fdmr_mon
     sudo rm mon.db
     sudo python3 mon_db.py
-    sudo systemct start fdmr_mon
+    sudo systemctl start fdmr_mon
 
 
 ---
