@@ -1,4 +1,7 @@
-<?php include_once 'include/config.php'; ?>
+<?php 
+include_once 'include/config.php'; 
+session_start()
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -11,8 +14,8 @@
 </head>
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
-  <h2><?php echo REPORT_NAME; ?></h2>
-  <div><?php include_once 'buttons.php'; ?></div>
+  <h2><?php echo REPORT_NAME?></h2>
+  <div><?php include_once 'buttons.php'?></div>
   <noscript>You must enable JavaScript</noscript>
   <p id="tgcount"></p>
   <footer>

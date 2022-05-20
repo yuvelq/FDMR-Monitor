@@ -86,7 +86,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
     </script>
     <!-- Language -->
     <form class="lang" method="get" action="" id="form_lang" >
-      <?=_SELECT_LANG?><select name="lang" onchange="changeLang();" >
+      <?php echo _SELECT_LANG?><select name="lang" onchange="changeLang();" >
       <option value="eng" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "eng"){echo "selected";}?> >English</option>
       <option value="esp" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "esp"){echo "selected";}?> >Español</option>
       </select>

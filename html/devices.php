@@ -65,7 +65,7 @@ if (isset($_SESSION["lang"])) {
     </script>
     <!-- Language -->
     <form class="lang" method="get" action="" id="form_lang">
-      <?=_SELECT_LANG?><select name="lang" onchange="changeLang();">
+      <? echo _SELECT_LANG?><select name="lang" onchange="changeLang();">
       <option value="eng" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "eng"){echo "selected";}?> >English</option>
       <option value="esp" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "esp"){echo "selected";}?> >Español</option>
       </select>
@@ -73,7 +73,7 @@ if (isset($_SESSION["lang"])) {
     
     <!-- Logged in devices info -->
     <div class="show-data">
-      <div><b><?=_SELECT_DEVICE?></b></div>
+      <div><b><? echo _SELECT_DEVICE?></b></div>
       <?php
         foreach($_SESSION["hs_avail"] as $key=>$val){
           echo '<a href="form.php?dmr_id='.$key.'"> '.$key.' </a><br>';

@@ -40,7 +40,7 @@ background-color: #d7e6f4;
   font-size: 1.4em;
 }
 .selfserv .form-button {
-  <?= THEME_COLOR."\n"; ?>
+  <?php echo THEME_COLOR."\n"?>
   background-image: linear-gradient(to bottom, #337ab7 0%, #265a88 100%);
   border: none;
   padding: 6px 13px;

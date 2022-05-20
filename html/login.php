@@ -78,7 +78,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
-  <h2><?= REPORT_NAME;?></h2>
+  <h2><?php echo  REPORT_NAME?></h2>
   <div><?php include_once "buttons.php"?></div>
   <fieldset class="login selfserv">
     <legend><b>.: Login :.</b></legend>
@@ -89,7 +89,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </script>
     <!-- Language -->
     <form class="lang" method="get" action="" id="form_lang">
-      <?=_SELECT_LANG?><select name="lang" onchange="changeLang();">
+      <?php echo _SELECT_LANG?><select name="lang" onchange="changeLang();">
       <option value="eng" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "eng"){echo "selected";}?> >English</option>
       <option value="esp" <?php if(isset($_SESSION["lang"]) and $_SESSION["lang"] == "esp"){echo "selected";}?> >Español</option>
       </select>
@@ -98,14 +98,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="login-gen">
     <form method="post" action="" name="signin-form">
       <div class="login-item">
-        <label>DMR ID: <span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?=_DMRID_INFO?></span></span></label><br>
-        <input type="text" name="dmr_id" autocomplete="on" pattern="[0-9]{6,10}" title="<?=_ONLY_NUMB?>" required>
+        <label>DMR ID: <span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?php echo _DMRID_INFO?></span></span></label><br>
+        <input type="text" name="dmr_id" autocomplete="on" pattern="[0-9]{6,10}" title="<?php echo _ONLY_NUMB?>" required>
       </div>
       <div class="login-item">
-        <label>Password: <span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?=_PSSWD_INFO?></span></span></label><br>
+        <label>Password: <span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?php echo _PSSWD_INFO?></span></span></label><br>
         <input type="password" name="psswd" autocomplete="current-password" minlength="6" maxlength="64" required>
       </div>
-      <div style="color: red;"><?=$loginErr?></div>
+      <div style="color: red;"><?php echo $loginErr?></div>
       <button class="form-button" type="submit" name="login" value="login">Log in</button>
     </form>
     </div>
