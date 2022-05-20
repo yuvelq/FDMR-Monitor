@@ -2,3 +2,7 @@
 config.py
 *.log
 *.json
+fdmr-mon.cfg
+*.csv
+*.db
+venv
