@@ -7,6 +7,8 @@
 
 <a class="button" href="opb.php">OpenBridge</a>
 
+<?php if(TGCOUNT_INC){echo '<a class="button" href="tgcount.php">TG Count</a>';}?>
+
 <div class="dropdown">
   <button class="dropbtn">Self Service</button>
   <div class="dropdown-content">
@@ -20,16 +22,19 @@
   </div>
 </div>
 
-<a class="button" href="sysinfo.php">System Info</a>
-
-<a class="button" href="log.php">Lastheard</a>
-
-<a class="button" href="moni.php">Monitor</a>
+<div class="dropdown">
+  <button class="dropbtn">Server Stats</button>
+  <div class="dropdown-content">
+    <a href="moni.php">Monitor</a>
+    <a href="sysinfo.php">System Info</a>
+    <a href="log.php">Lastheard</a>
+  </div>
+</div>
 
 <a class="button" href="info.php">Info</a>
 
 <!--
-<a class="button" href="bridges.php">&nbsp;Bridges&nbsp;</a>
+<a class="button" href="bridges.php">Bridges</a>
 -->
 
 <!-- Example of buttons dropdown HTML code -->

@@ -1,4 +1,4 @@
-<fieldset class="big">
+s<fieldset class="big">
   <legend><b>.: Static TG :.</b></legend>
   {% if _table['MASTERS']|length > 0 %}
   <table class="stctg">
@@ -38,21 +38,21 @@
         </div><br>
         <div class="location">{{_cdata['LOCATION']}}</div>
       </td>
-      <td class="connted-bkgnd" rowspan="2">{{ _cdata['CONNECTED'] }}</td>
-      <td class="txt-b70101 ts1-bkgnd">TS1</td>
-      <td class="ts1-bkgnd">{{ _cdata['TS1_STATIC']|join(', ') }}</td>
-      <td class="ts1-bkgnd txt-008000">{{ _cdata['SINGLE_TS1']['TGID'] if 'SINGLE_TS1' in _cdata else '' }}</td>
-      <td class="ts1-bkgnd txt-008000">{{ _cdata['SINGLE_TS1']['TO'] if 'SINGLE_TS1' in _cdata else '' }}</td>
-    <tr>
-      <td><span class="txt-3a4aa6">TS2</span></td>
-      <td>{{ _cdata['TS2_STATIC']|join(', ') }}</td>
-      <td class="txt-008000">{{ _cdata['SINGLE_TS2']['TGID'] if 'SINGLE_TS2' in _cdata else '' }}</td>
-      <td class="txt-008000">{{ _cdata['SINGLE_TS2']['TO'] if 'SINGLE_TS2' in _cdata else '' }}</td>
+        <td class="connted-bkgnd" rowspan="2">{{ _cdata['CONNECTED'] }}</td>
+        <td class="txt-b70101 ts1-bkgnd">TS1</td>
+        <td class="ts1-bkgnd"><b>{{ _cdata['TS1_STATIC']|join(', ') }}</b></td>
+        <td class="ts1-bkgnd txt-008000">{{ _cdata['SINGLE_TS1']['TGID'] if 'SINGLE_TS1' in _cdata else '' }}</td>
+        <td class="ts1-bkgnd txt-008000">{{ _cdata['SINGLE_TS1']['TO'] if 'SINGLE_TS1' in _cdata else '' }}</td>
+      <tr>
+        <td><span class="txt-3a4aa6">TS2</span></td>
+        <td><b>{{ _cdata['TS2_STATIC']|join(', ') }}</b></td>
+        <td class="txt-008000">{{ _cdata['SINGLE_TS2']['TGID'] if 'SINGLE_TS2' in _cdata else '' }}</td>
+        <td class="txt-008000">{{ _cdata['SINGLE_TS2']['TO'] if 'SINGLE_TS2' in _cdata else '' }}</td>
+      </tr>
     </tr>
-    </tr>
-    {% endfor %}
-    {% endif %}
-    {% endfor %}
+      {% endfor %}
+      {% endif %}
+      {% endfor %}
   </table>
   {% else %}
   <table class="w4data"><tr><td><b>Waiting for data from the Server...</b></td></tr></table>
