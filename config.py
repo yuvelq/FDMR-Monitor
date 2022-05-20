@@ -112,7 +112,7 @@ def mk_config(cfg_file):
                     "FREQ": conf.getint(section, "FREQUENCY"),
                     "CLT_TO": conf.getint(section, "CLIENT_TIMEOUT")
                     }
-            elif section == "DEFAULT":
+            elif section in ("DEFAULT", "SELF SERVICE"):
                 pass
 
             else:
