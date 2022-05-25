@@ -84,11 +84,11 @@ CTABLE = {
     "OPENBRIDGES": {},
     "SETUP": {"LASTHEARD": CONF["GLOBAL"]["LH_INC"]}
     }
-BRIDGES = {}
 BTABLE = {
     "BRIDGES": {},
     "SETUP": {}
     }
+BRIDGES = {}
 BRIDGES_RX = ""
 CONFIG_RX = ""
 LOGBUF = deque(100*[""], 100)
@@ -792,8 +792,7 @@ def build_tgstats():
                     continue
                 for peer in CTABLE["MASTERS"][system["SYSTEM"]]["PEERS"]:
                     CTABLE["MASTERS"][system["SYSTEM"]]["PEERS"][peer]["SINGLE_TS"+str(system["TS"])] = {
-                        "TGID": int_id(system["TGID"]), "TO": time_str(system["TIMER"],"to")
-                    }
+                        "TGID": int_id(system["TGID"]), "TO": time_str(system["TIMER"],"to")}
 
 
 def timeout_clients():
@@ -1180,6 +1179,17 @@ def cleaning_loop():
     for _table, _row_num in tbls:
         db_conn.clean_table(_table, _row_num)
 
+@inlineCallbacks
+def db_test():
+    try:
+        res = yield db_conn.test_db()
+        if res:
+            logger.info("Connection with Database ok")
+
+    except Exception as err:
+        logger.error(f"We found an error: {err}, shutting down the reactor.")
+        reactor.stop()
+
 
 #######################################################################
 if __name__ == "__main__":
@@ -1205,7 +1215,9 @@ if __name__ == "__main__":
                 "\n\n\tFDMR-Monitor OA4DOA 2022\n\n")
 
     # Create an instance of MoniDB
-    db_conn = MoniDB("mon.db")
+    db_conn = MoniDB(CONF["DB"]["SERVER"], CONF["DB"]["USER"],
+                     CONF["DB"]["PASSWD"], CONF["DB"]["NAME"])
+    db_test()
 
     # Jinja2 Stuff
     env = Environment(
@@ -1260,10 +1272,11 @@ if __name__ == "__main__":
     # and add load ssl module in line number 43: from twisted.internet import reactor, task, ssl
     #
     # put certificate https://letsencrypt.org/ used in apache server
-    #certificate = ssl.DefaultOpenSSLContextFactory("/etc/letsencrypt/live/hbmon.dmrserver.org/privkey.pem", "/etc/letsencrypt/live/hbmon.dmrserver.org/cert.pem")
-    #dashboard_server = dashboardFactory("wss://*:9000")
-    #dashboard_server.protocol = dashboard
-    #reactor.listenSSL(9000, dashboard_server,certificate)
+    # certificate = ssl.DefaultOpenSSLContextFactory("/etc/letsencrypt/live/hbmon.dmrserver.org/privkey.pem",
+    # "/etc/letsencrypt/live/hbmon.dmrserver.org/cert.pem")
+    # dashboard_server = dashboardFactory("wss://*:9000")
+    # dashboard_server.protocol = dashboard
+    # reactor.listenSSL(9000, dashboard_server,certificate)
 
     logger.info(f'Starting webserver on port {CONF["WS"]["WS_PORT"]} with SSL = {CONF["WS"]["USE_SSL"]}')
 
