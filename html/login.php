@@ -19,15 +19,15 @@ if (isset($_SESSION["lang"])) {
   include "selfserv/lang/lang_eng.php";
 }
 // Define empty variables
-$dmr_id = $psswd = "";
+$callsign = $psswd = "";
 $dmr_idErr = $psswdErr = $loginErr = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-  // DMR ID
-  if (isset($_POST["dmr_id"])) {
-    $dmr_id = Check_input($_POST["dmr_id"]);
-    if (strlen($dmr_id) < 6 or strlen($dmr_id) > 10 or preg_match("/[^0-9]/", $dmr_id)) {
-      $dmr_idErr = True;
+  // Call sign
+  if (isset($_POST["callsign"])) {
+    $callsign = Check_input($_POST["callsign"]);
+    if (strlen($callsign) < 3 or strlen($callsign) > 10 or preg_match("/[^0-9A-Za-z]/", $callsign)) {
+      $callsignErr = True;
     }
   }
   // Password
@@ -38,13 +38,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
   }
 
-  if ($dmr_id and $psswd and !$dmr_idErr and !$psswdErr) {
+  if ($callsign and $psswd and !$callsigndErr and !$psswdErr) {
     $h_psswd = hash_pbkdf2("sha256", $psswd, "FreeDMR", 2000);
-    $w_dmr_id = $dmr_id."__";
 
     $stmt = mysqli_prepare($db_conn, "SELECT int_id, options, mode FROM Clients
-      WHERE int_id LIKE ? AND psswd = ? AND logged_in = True AND opt_rcvd = False");
-    $stmt -> bind_param("ss", $w_dmr_id, $h_psswd);
+      WHERE callsign =  ? AND psswd = ? AND logged_in = True AND opt_rcvd = False");
+    $stmt -> bind_param("ss", $callsign, $h_psswd);
     $stmt -> execute();
     $result = $stmt -> get_result();
     if ($result->num_rows > 0) {
@@ -54,7 +53,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       }
       // Set Session variables
       $_SESSION["auth"] = True;
-      $_SESSION["w_dmr_id"] = $w_dmr_id;
+      $_SESSION["callsign"] = $callsign;
       $_SESSION["h_psswd"] = $h_psswd;
       $_SESSION["time_ref"] = time();
       $_SESSION["hs_avail"] = $hs_avail;
@@ -98,11 +97,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="login-gen">
     <form method="post" action="" name="signin-form">
       <div class="login-item">
-        <label>DMR ID: <span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?php echo _DMRID_INFO?></span></span></label><br>
-        <input type="text" name="dmr_id" autocomplete="on" pattern="[0-9]{6,10}" title="<?php echo _ONLY_NUMB?>" required>
+        <label><?php echo _CALLSIGN?><span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?php echo _CS_INFO?></span></span></label><br>
+        <input type="text" name="callsign" autocomplete="on" pattern="[0-9]+[a-zA-Z]+{6,10}" title="<?php echo _CS_ONLY?>" required>
       </div>
       <div class="login-item">
-        <label>Password: <span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?php echo _PSSWD_INFO?></span></span></label><br>
+        <label><?php echo _PASSWORD?><span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?php echo _PSSWD_INFO?></span></span></label><br>
         <input type="password" name="psswd" autocomplete="current-password" minlength="6" maxlength="64" required>
       </div>
       <div style="color: red;"><?php echo $loginErr?></div>

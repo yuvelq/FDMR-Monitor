@@ -15,7 +15,7 @@
     <?php if(!PRIVATE_NETWORK){echo '<a href="selfservice.php">SelfService</a>';}?>
     <a href="login.php">Login</a>
     <?php 
-    if(isset($_SESSION["auth"], $_SESSION["w_dmr_id"], $_SESSION["h_psswd"]) and $_SESSION["auth"]){
+    if(isset($_SESSION["auth"], $_SESSION["callsign"], $_SESSION["h_psswd"]) and $_SESSION["auth"]){
       echo '<a href="devices.php">Devices</a>';
     }
     ?>

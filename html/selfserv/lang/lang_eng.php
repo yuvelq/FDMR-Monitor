@@ -27,9 +27,12 @@ define("_DATA_UPDT", "Data updated successfully &#x2714;");
 define("_DATA_UPDT_ERR", "Error updating data, try again later.");
 define("_SUBMIT", "Submit");
 // Login page //
-define("_LOGINERR", "Incorrect DMR ID and/or password.");
-define("_DMRID_INFO", "Enter your DMR ID e.g. hotspot 7 digits, repeater 6 digits.");
-define("_PSSWD_INFO", "This is the password entered in the options field, it must contain at least 6 characters e.g. PASS=youpassword");
+define("_CALLSIGN", "Call Sign: ");
+define("_PASSWORD", "Password: ");
+define("_LOGINERR", "Incorrect call sign and/or password.");
+define("_CS_INFO", "Enter the call sign that you have registered with your device e.g. OA4DOA");
+define("_PSSWD_INFO", "This is the password entered in the options field, it must contain at least 6 characters e.g. PASS=yourpassword");
 define("_TRY_LOGIN", 'Use <a href="login.php">login</a> instead.');
+define("_CS_ONLY", "Use only numbers and letters.");
 // General
 define("_ONLY_NUMB", "Use only numbers.");

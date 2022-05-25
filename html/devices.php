@@ -10,10 +10,10 @@ if (!isset($_SESSION["auth"]) or !$_SESSION["auth"]) {
   header("Location: login.php");
   exit();
 } else {
-  if (isset($_SESSION["time_ref"], $_SESSION["w_dmr_id"], $_SESSION["h_psswd"]) and time()-$_SESSION["time_ref"] > 0.5) {
+  if (isset($_SESSION["time_ref"], $_SESSION["callsign"], $_SESSION["h_psswd"]) and time()-$_SESSION["time_ref"] > 0.5) {
     $stmt = mysqli_prepare($db_conn, "SELECT int_id, options, mode FROM Clients
-      WHERE int_id LIKE ? AND psswd = ? AND logged_in = True AND opt_rcvd = False");
-    $stmt -> bind_param("ss", $_SESSION["w_dmr_id"], $_SESSION["h_psswd"]);
+      WHERE callsign = ? AND psswd = ? AND logged_in = True AND opt_rcvd = False");
+    $stmt -> bind_param("ss", $_SESSION["callsign"], $_SESSION["h_psswd"]);
     $stmt -> execute();
     $result = $stmt -> get_result();
     if ($result -> num_rows > 0) {
@@ -73,7 +73,7 @@ if (isset($_SESSION["lang"])) {
     
     <!-- Logged in devices info -->
     <div class="show-data">
-      <div><b><? echo _SELECT_DEVICE?></b></div>
+      <div><b><?php echo _SELECT_DEVICE?></b></div>
       <?php
         foreach($_SESSION["hs_avail"] as $key=>$val){
           echo '<a href="form.php?dmr_id='.$key.'"> '.$key.' </a><br>';

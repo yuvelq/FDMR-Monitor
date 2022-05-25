@@ -26,10 +26,13 @@ define("_NOTE_MAIN", "Para poder administrar tu dispositivo por aquí, por favor
 define("_DATA_UPDT", "La información se actualizó correctamente &#x2714;");
 define("_DATA_UPDT_ERR", "Se produjo un error, intenta nuevamente después.");
 define("_SUBMIT", "Enviar");
-// Login 
-define("_LOGINERR", "DMR ID y/o contraseña incorrecta.");
-define("_DMRID_INFO", "Ingrese su DMR ID ej. hotspot 7 digitos, repetidor 6 digitos.");
+// Login
+define("_CALLSIGN", "Indicativo: ");
+define("_PASSWORD", "Contraseña: ");
+define("_LOGINERR", "Indicativo y/o contraseña incorrecta.");
+define("_CS_INFO", "Ingrese el Indicativo que registró con su dispositivo ej. OA4DOA");
 define("_PSSWD_INFO", "Esta es la contraseña que agregaste en la casilla de opciones, debe contener al menos 6 caracteres ej. PASS=tuclave");
 define("_TRY_LOGIN", 'Acceder vía <a href="login.php">login</a>.');
+define("_CS_ONLY", "Utilice sólo números y letras.");
 // General
-define("_ONLY_NUMB", "Utilizar solo números.");
+define("_ONLY_NUMB", "Utilice solo números.");
