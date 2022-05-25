@@ -112,7 +112,14 @@ def mk_config(cfg_file):
                     "FREQ": conf.getint(section, "FREQUENCY"),
                     "CLT_TO": conf.getint(section, "CLIENT_TIMEOUT")
                     }
-            elif section in ("DEFAULT", "SELF SERVICE"):
+            elif section == "SELF SERVICE":
+                CONF["DB"] = {
+                    "SERVER": conf.get(section, "DB_SERVER"),
+                    "USER": conf.get(section, "DB_USERNAME"),
+                    "PASSWD": conf.get(section, "DB_PASSWORD"),
+                    "NAME": conf.get(section, "DB_NAME")
+                    }
+            elif section == "DEFAULT":
                 pass
 
             else:
