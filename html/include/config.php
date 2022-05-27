@@ -1,15 +1,11 @@
 <?php
-
+include_once '../selfserv/functions.php';
 // Report all errors except E_NOTICE
 error_reporting(E_ALL & ~E_NOTICE);
 
 $path2config = "/opt/FDMR-Monitor/fdmr-mon.cfg";
-
-if (file_exists($path2config)) {
-  $config = parse_ini_file($path2config, true);
-} else {
-  $config = null;
-}
+// Parse config file
+$config = conf_parser($path2config);
 
 // Define TGCOUNT_INC
 if ($config and array_key_exists("TGCOUNT_INC", $config["GLOBAL"])) {
