@@ -1179,17 +1179,6 @@ def cleaning_loop():
     for _table, _row_num in tbls:
         db_conn.clean_table(_table, _row_num)
 
-@inlineCallbacks
-def db_test():
-    try:
-        res = yield db_conn.test_db()
-        if res:
-            logger.info("Connection with Database ok")
-
-    except Exception as err:
-        logger.error(f"We found an error: {err}, shutting down the reactor.")
-        reactor.stop()
-
 
 #######################################################################
 if __name__ == "__main__":
@@ -1217,7 +1206,8 @@ if __name__ == "__main__":
     # Create an instance of MoniDB
     db_conn = MoniDB(CONF["DB"]["SERVER"], CONF["DB"]["USER"],
                      CONF["DB"]["PASSWD"], CONF["DB"]["NAME"])
-    db_test()
+    # Test the connection to the database
+    db_conn.test_db(reactor)
 
     # Jinja2 Stuff
     env = Environment(
