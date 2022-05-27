@@ -20,13 +20,13 @@ if (isset($_SESSION["lang"])) {
 }
 // Define empty variables
 $callsign = $psswd = "";
-$dmr_idErr = $psswdErr = $loginErr = "";
+$callsignErr = $psswdErr = $loginErr = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   // Call sign
   if (isset($_POST["callsign"])) {
     $callsign = Check_input($_POST["callsign"]);
-    if (strlen($callsign) < 3 or strlen($callsign) > 10 or preg_match("/[^0-9A-Za-z]/", $callsign)) {
+    if (!preg_match("/^(?=.*[a-zA-Z])(?=\w*[0-9])\w{3,10}$/", $callsign)) {
       $callsignErr = True;
     }
   }
@@ -38,7 +38,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
   }
 
-  if ($callsign and $psswd and !$callsigndErr and !$psswdErr) {
+  if ($callsign and $psswd and !$callsignErr and !$psswdErr) {
     $h_psswd = hash_pbkdf2("sha256", $psswd, "FreeDMR", 2000);
 
     $stmt = mysqli_prepare($db_conn, "SELECT int_id, options, mode FROM Clients
@@ -98,7 +98,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <form method="post" action="" name="signin-form">
       <div class="login-item">
         <label><?php echo _CALLSIGN?><span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?php echo _CS_INFO?></span></span></label><br>
-        <input type="text" name="callsign" autocomplete="on" pattern="[0-9]+[a-zA-Z]+{6,10}" title="<?php echo _CS_ONLY?>" required>
+        <input type="text" name="callsign" autocomplete="on" pattern="^(?=.*[a-zA-Z])(?=\w*[0-9])\w{3,10}$" title="<?php echo _CS_ONLY?>" required>
       </div>
       <div class="login-item">
         <label><?php echo _PASSWORD?><span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?php echo _PSSWD_INFO?></span></span></label><br>
