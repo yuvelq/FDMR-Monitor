@@ -116,13 +116,13 @@ class MoniDB:
                             date DATETIME NOT NULL,
                             tg_num INT PRIMARY KEY NOT NULL,
                             qso_count INT NOT NULL,
-                            qso_time DECIMAL(5,2) NOT NULL) CHARSET=utf8mb4''')
+                            qso_time DECIMAL(7,2) NOT NULL) CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS user_count (
                             date DATETIME NOT NULL,
                             tg_num INT NOT NULL,
                             dmr_id INT NOT NULL,
-                            qso_time DECIMAL(5,2) NOT NULL,
+                            qso_time DECIMAL(7,2) NOT NULL,
                             UNIQUE(tg_num, dmr_id)) CHARSET=utf8mb4''')
 
             yield self.db.runInteraction(create_tbl)
