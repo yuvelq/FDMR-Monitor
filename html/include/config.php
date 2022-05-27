@@ -3,13 +3,42 @@
 // Report all errors except E_NOTICE
 error_reporting(E_ALL & ~E_NOTICE);
 
-$path2config = "/opt/FDMR-Monitor/fdmr-mon.cfg";
-
-if (file_exists($path2config)) {
-  $config = parse_ini_file($path2config, true);
-} else {
-  $config = null;
+// Parse config file allowing special characters
+function conf_parser($conf_file) {
+  if (file_exists($conf_file)) {
+    $file = new SplFileObject($conf_file);
+    $conf = array();
+    $stanza = "DEFAULT";
+    while (!$file -> eof()) {
+      $line = trim($file -> fgets());
+      $first = substr($line, 0, 1);
+      $last = substr($line, -1);
+      if (strlen($line) <= 2 or $first == "#" or $first == ";") {
+        continue;
+      } 
+      if ($first == '[' and $last == ']') {
+        $stanza = substr($line, 1, -1);
+      } else {
+        $line_exp = explode('=', $line);
+        $key = trim($line_exp[0]);
+        $value = trim($line_exp[1]);
+        if (in_array(strtolower($value), array("yes", "true", "on", "1"))) {
+          $value = true;
+        } elseif (in_array(strtolower($value), array("no", "false", "off", "0"))) {
+          $value = false;
+        }
+        $conf[$stanza][$key] = $value;
+      }
+    }
+    return $conf;
+  } else {
+    return array();
+  }
 }
+
+$path2config = "/opt/FDMR-Monitor/fdmr-mon.cfg";
+// Parse config file
+$config = conf_parser($path2config);
 
 // Define TGCOUNT_INC
 if ($config and array_key_exists("TGCOUNT_INC", $config["GLOBAL"])) {
