@@ -20,8 +20,7 @@
 
 import logging
 from json import loads as jloads
-from select import select
-import sys
+from sys import exit as sys_exit
 
 from twisted.enterprise import adbapi
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -49,14 +48,24 @@ def sec_time(_time):
         return f'{seconds}s'
 
 
-
 class MoniDB:
     def __init__(self, host, user, psswd, db_name):
         self.db = adbapi.ConnectionPool("MySQLdb", host, user, psswd, db_name)
 
-    def test_db(self):
-        return self.db.runQuery("select 1")
-            
+    @inlineCallbacks
+    def test_db(self, _reactor):
+        try:
+            res = yield self.db.runQuery("select 1")
+            if res:
+                logger.info("Database connection test: OK")
+
+        except Exception as err:
+            if _reactor.running:
+                logger.error(f"Database connection error: {err}, stopping the reactor.")
+                _reactor.stop()
+            else:
+                sys_exit(f"Database connection error: {err}, exiting.")
+
     @inlineCallbacks
     def create_tables(self):
         try:
@@ -66,7 +75,7 @@ class MoniDB:
                             dmr_id TINYBLOB NOT NULL,
                             callsign VARCHAR(10) NOT NULL,
                             host VARCHAR(15),
-                            options VARCHAR(100),
+                            options VARCHAR(250),
                             opt_rcvd TINYINT(1) DEFAULT False NOT NULL,
                             mode TINYINT(1) DEFAULT 4 NOT NULL,
                             logged_in TINYINT(1) DEFAULT False NOT NULL,
@@ -311,25 +320,31 @@ class MoniDB:
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
+
     from twisted.internet import reactor
+
+    from config import mk_config
     
+
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
 
     parser = ArgumentParser()
     parser.add_argument("--create",
-                      action="store_true", dest="create_tbl",
-                      help="Create FDMR Monitor database tables")
-    args = parser.parse_args()
+                        action="store_true", dest="create_tbl",
+                        help="Create FDMR Monitor database tables")
+    args = parser.parse_args(["--create"])
 
     if args.create_tbl:
+        CONF = mk_config("fdmr-mon.cfg")
+        if "DB" not in CONF:
+            sys_exit("Not SELF SERVICE stanza on config file")
         # Create an instance of MoniDB
-        _db = MoniDB("localhost", "root", "", "test")
-
+        _db = MoniDB(CONF["DB"]["SERVER"], CONF["DB"]["USER"],
+                     CONF["DB"]["PASSWD"], CONF["DB"]["NAME"])
+        _db.test_db(reactor)
         # Create tables in db
-        
         reactor.callLater(1, _db.create_tables)
-
-        reactor.callLater(3, reactor.stop)
+        reactor.callLater(6, reactor.stop)
         reactor.run()
