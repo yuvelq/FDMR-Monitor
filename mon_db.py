@@ -102,7 +102,7 @@ class MoniDB:
             logger.info("Tables created successfully.")
 
         except Exception as err:
-            logger.error(f"create_tables: {err}, {type(err)}")
+            logger.error(f"create_tables: {err}.")
 
     @inlineCallbacks
     def populate_tbl(self, table, lst_data, wipe_tbl, _file):
@@ -128,7 +128,7 @@ class MoniDB:
             yield self.db.runInteraction(populate, wipe_tbl)
 
         except Exception as err:
-            logger.error(f"populate: {err}, {type(err)}")
+            logger.error(f"populate_tbl: {err}.")
 
     @inlineCallbacks
     def table_count(self, _table):
@@ -147,7 +147,7 @@ class MoniDB:
                 returnValue(None)
 
         except Exception as err:
-            logger.error(f"table_count: {err}, {type(err)}")
+            logger.error(f"table_count: {err}.")
 
     @inlineCallbacks
     def ins_lstheard(self, qso_time, qso_type, system, tg_num, dmr_id):
@@ -157,7 +157,7 @@ class MoniDB:
                 (qso_time, qso_type, system, tg_num, dmr_id))
 
         except Exception as err:
-            logger.error(f"ins_lstheard: {err}, {type(err)}")
+            logger.error(f"ins_lstheard: {err}.")
 
     @inlineCallbacks
     def ins_lstheard_log(self, qso_time, qso_type, system, tg_num, dmr_id):
@@ -168,7 +168,7 @@ class MoniDB:
                 (qso_time, qso_type, system, tg_num, dmr_id))
 
         except Exception as err:
-            logger.error(f"ins_lstheard_log: {err}, {type(err)}")
+            logger.error(f"ins_lstheard_log: {err}.")
 
     @inlineCallbacks
     def slct_2dict(self, _id, _table):
@@ -185,7 +185,7 @@ class MoniDB:
                 returnValue(None)
 
         except Exception as err:
-            logger.error(f"slct_2dict: {err}, {type(err)}")
+            logger.error(f"slct_2dict: {err}.")
 
     @inlineCallbacks
     def slct_2render(self, _table, _row_num):
@@ -203,8 +203,8 @@ class MoniDB:
                     FROM lstheard_log ORDER BY date_time DESC LIMIT ?'''
 
             result = yield self.db.runQuery(stm, (_row_num,))
+            tmp_lst = []
             if result:
-                tmp_lst = []
                 for row in result:
                     if row[7]:
                         r_lst = list(row)
@@ -212,12 +212,10 @@ class MoniDB:
                         tmp_lst.append(tuple(r_lst))
                     else:
                         tmp_lst.append(row)
-                returnValue(tmp_lst)
-            else:
-                returnValue(None)
-
+            returnValue(tmp_lst)
+            
         except Exception as err:
-            logger.error(f"slct_2render: {err}, {type(err)}")
+            logger.error(f"slct_2render: {err}.")
 
     @inlineCallbacks
     def clean_table(self, _table, _row_num):
@@ -234,7 +232,7 @@ class MoniDB:
             logger.info(f"{_table} DB table cleaned successfully.")
 
         except Exception as err:
-            logger.error(f"clean_tables: {err}, {type(err)}")
+            logger.error(f"clean_tables: {err}.")
 
     @inlineCallbacks
     def ins_tgcount(self, _tg_num, _dmr_id, _qso_time):
@@ -251,7 +249,7 @@ class MoniDB:
             yield self.db.runInteraction(db_actn)
 
         except Exception as err:
-            logger.error(f"ins_tgcount: {err}, {type(err)}")
+            logger.error(f"ins_tgcount: {err}.")
 
     @inlineCallbacks
     def slct_tgcount(self, _row_num):
@@ -274,7 +272,7 @@ class MoniDB:
                 returnValue(None)
 
         except Exception as err:
-            logger.error(f"slct_tgcount: {err}, {type(err)}")
+            logger.error(f"slct_tgcount: {err}.")
 
     @inlineCallbacks
     def clean_tgcount(self):
@@ -287,19 +285,20 @@ class MoniDB:
             logger.info("TG Count tables cleaned successfully")
 
         except Exception as err:
-            logger.error(f"clean_tgcount: {err}, {type(err)}")
+            logger.error(f"clean_tgcount: {err}.")
 
 
 if __name__ == '__main__':
     from twisted.internet import reactor
 
-    logging.basicConfig(
-        level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
 
     # Create an instance of MoniDB
     test_db = MoniDB("mon.db")
 
-    # Create tables in db
+    # Create tables
     test_db.create_tables()
 
     reactor.callLater(5, reactor.stop)
