@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 ###############################################################################
 #   Copyright (C) 2022 Christian Quiroz, OA4DOA <adm@dmr-peru.pe>
 #
@@ -75,7 +74,7 @@ class MoniDB:
                             dmr_id TINYBLOB NOT NULL,
                             callsign VARCHAR(10) NOT NULL,
                             host VARCHAR(15),
-                            options VARCHAR(250),
+                            options VARCHAR(300),
                             opt_rcvd TINYINT(1) DEFAULT False NOT NULL,
                             mode TINYINT(1) DEFAULT 4 NOT NULL,
                             logged_in TINYINT(1) DEFAULT False NOT NULL,
@@ -84,7 +83,7 @@ class MoniDB:
                             last_seen INT NOT NULL) CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS talkgroup_ids (
-                            id INT PRIMARY KEY UNIQUE NOT NULL, 
+                            id INT PRIMARY KEY UNIQUE NOT NULL,
                             callsign VARCHAR(255) NOT NULL) CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS subscriber_ids (
@@ -149,7 +148,7 @@ class MoniDB:
                     txn.execute(w_stm)
 
                 txn.executemany(stm, lst_data)
-                
+
                 if txn.rowcount > 0:
                     logger.info(f"{txn.rowcount} entries added to: {table} table from: {_file}")
 
@@ -241,7 +240,7 @@ class MoniDB:
                     else:
                         tmp_lst.append(row)
             returnValue(tmp_lst)
-            
+
         except Exception as err:
             logger.error(f"slct_2render: {err}.")
 
@@ -292,11 +291,12 @@ class MoniDB:
                 res_lst = []
                 for tg_num, name, qso_c, qso_time in rows:
                     res = yield self.db.runQuery(
-                        '''SELECT ifnull(callsign, "N0CALL") FROM user_count 
+                        '''SELECT ifnull(callsign, "N0CALL") FROM user_count
                         LEFT JOIN subscriber_ids ON subscriber_ids.id = user_count.dmr_id
                         WHERE tg_num = %s ORDER BY qso_time DESC LIMIT 4''', (tg_num,))
 
-                    res_lst.append((tg_num, name, qso_c, sec_time(qso_time), tuple([ite[0] for ite in res])))
+                    res_lst.append(
+                        (tg_num, name, qso_c, sec_time(qso_time), tuple([ite[0] for ite in res])))
                 returnValue(res_lst)
             else:
                 returnValue(None)
@@ -317,6 +317,19 @@ class MoniDB:
         except Exception as err:
             logger.error(f"clean_tgcount: {err}.")
 
+    @inlineCallbacks
+    def updt_table(self):
+        try:
+            def db_actn(txn):
+                txn.execute('''ALTER TABLE Clients ADD COLUMN IF NOT EXISTS callsign VARCHAR(10)
+                            DEFAULT 'NOCALL' NOT NULL AFTER dmr_id''')
+                txn.execute("ALTER TABLE Clients MODIFY COLUMN options VARCHAR(300)")
+            yield self.db.runInteraction(db_actn)
+            logger.info("Tables updated successfully")
+
+        except Exception as err:
+            logger.error(f"updt_table: {err}")
+
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -324,7 +337,6 @@ if __name__ == '__main__':
     from twisted.internet import reactor
 
     from config import mk_config
-    
 
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s',
@@ -333,10 +345,14 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--create",
                         action="store_true", dest="create_tbl",
-                        help="Create FDMR Monitor database tables")
-    args = parser.parse_args(["--create"])
+                        help="Create FDMR-Monitor database tables")
+    parser.add_argument("--update",
+                        action="store_true", dest="update_tbl",
+                        help="Update FDMR-Monitor database tables")
 
-    if args.create_tbl:
+    args = parser.parse_args()
+
+    if args.create_tbl or args.update_tbl:
         CONF = mk_config("fdmr-mon.cfg")
         if "DB" not in CONF:
             sys_exit("Not SELF SERVICE stanza on config file")
@@ -344,7 +360,12 @@ if __name__ == '__main__':
         _db = MoniDB(CONF["DB"]["SERVER"], CONF["DB"]["USER"],
                      CONF["DB"]["PASSWD"], CONF["DB"]["NAME"])
         _db.test_db(reactor)
-        # Create tables in db
-        reactor.callLater(1, _db.create_tables)
-        reactor.callLater(6, reactor.stop)
+        if args.create_tbl:
+            # Create tables
+            reactor.callLater(1, _db.create_tables)
+        elif args.update_tbl:
+            # Update tables
+            reactor.callLater(1, _db.updt_table)
+
+        reactor.callLater(7, reactor.stop)
         reactor.run()
