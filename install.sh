@@ -56,7 +56,7 @@ if [ ! -z $1 ] && [ $1 == '-i' ]; then
   for i in ${!db_items[@]}; do
     db_info ${db_items[$i]}
   done
-  #Create and update 
+  #Create and update database tables
   python3 mon_db.py --create
   python3 mon_db.py --update
 fi
