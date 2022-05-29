@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 ###############################################################################
 # Copyright (C) 2020 Simon Adlem, G7RZU <g7rzu@gb7fr.org.uk>
 #
@@ -59,7 +60,7 @@ def IsIPv6Address(ip):
 class Proxy(DatagramProtocol):
 
     def __init__(self, Master, ListenPort, connTrack, peerTrack, blackList, IPBlackList, Timeout,
-                 Debug, ClientInfo, DestportStart, DestPortEnd, db_proxy):
+                 Debug, ClientInfo, DestportStart, DestPortEnd, db_proxy, selfservice):
         self.master = Master
         self.connTrack = connTrack
         self.peerTrack = peerTrack
@@ -72,6 +73,7 @@ class Proxy(DatagramProtocol):
         self.destPortEnd = DestPortEnd
         self.numPorts = DestPortEnd - DestportStart
         self.db_proxy = db_proxy
+        self.selfserv = selfservice
 
     def reaper(self,_peer_id):
         if self.debug:
@@ -81,7 +83,8 @@ class Proxy(DatagramProtocol):
                   f"IP:{self.peerTrack[_peer_id]['shost'].rjust(15)} Port:{self.peerTrack[_peer_id]['sport']} Removed.")
         self.transport.write(b'RPTCL'+_peer_id, (self.master,self.peerTrack[_peer_id]['dport']))
         self.connTrack[self.peerTrack[_peer_id]['dport']] = False
-        self.db_proxy.updt_tbl("log_out", _peer_id)
+        if self.selfserv:
+            self.db_proxy.updt_tbl("log_out", _peer_id)
         del self.peerTrack[_peer_id]
 
     def datagramReceived(self, data, addr):
@@ -172,28 +175,30 @@ class Proxy(DatagramProtocol):
                     _peer_id = data[5:9]
                 else:
                     _peer_id = data[4:8]        # Configure Command
-                    mode = data[97:98].decode()
-                    callsign = data[8:16].replace(b' ', b'').decode()
-                    self.db_proxy.ins_conf(int_id(_peer_id), _peer_id, callsign, addr[0], mode)
-                    # Self Service options will be send 10 sec. after login
-                    self.peerTrack[_peer_id]['opt_timer'] = reactor.callLater(10, self.login_opt, _peer_id)
+                    if self.selfserv:
+                        mode = data[97:98].decode()
+                        callsign = data[8:16].rstrip().decode()
+                        self.db_proxy.ins_conf(int_id(_peer_id), _peer_id, callsign, addr[0], mode)
+                        # Self Service options will be send 10 sec. after login
+                        self.peerTrack[_peer_id]['opt_timer'] = reactor.callLater(10, self.login_opt, _peer_id)
 
             elif _command == RPTO:              # options
                 _peer_id = data[4:8]
-                # Store Self Service password in database
-                if data[8:].upper().startswith(b"PASS="):
-                    _psswd = data[13:]
-                    if len(_psswd) >= 6:
-                        dk = pbkdf2_hmac('sha256', _psswd, b"FreeDMR", 2000).hex()
-                        self.db_proxy.updt_tbl("psswd", _peer_id, psswd=dk)
-                        self.transport.write (b''.join([RPTACK, _peer_id]), addr)
-                        print(f"Password stored for: {int_id(_peer_id)}")
-                        return
-                self.db_proxy.updt_tbl("opt_rcvd", _peer_id)
-                # Options send by peer overrides Self Service options
-                if self.peerTrack[_peer_id]['opt_timer'].active():
-                    self.peerTrack[_peer_id]['opt_timer'].cancel()
-                    print(f"Options received from: {int_id(_peer_id)}")
+                if self.selfserv:
+                    # Store Self Service password in database
+                    if data[8:].upper().startswith(b"PASS="):
+                        _psswd = data[13:]
+                        if len(_psswd) >= 6:
+                            dk = pbkdf2_hmac('sha256', _psswd, b"FreeDMR", 2000).hex()
+                            self.db_proxy.updt_tbl("psswd", _peer_id, psswd=dk)
+                            self.transport.write (b''.join([RPTACK, _peer_id]), addr)
+                            print(f"Password stored for: {int_id(_peer_id)}")
+                            return
+                    self.db_proxy.updt_tbl("opt_rcvd", _peer_id)
+                    # Options send by peer overrides Self Service options
+                    if self.peerTrack[_peer_id]['opt_timer'].active():
+                        self.peerTrack[_peer_id]['opt_timer'].cancel()
+                        print(f"Options received from: {int_id(_peer_id)}")
 
             elif _command == RPTP:              # RPTPing -- peer is pinging us
                 _peer_id = data[7:11]
@@ -261,8 +266,7 @@ class Proxy(DatagramProtocol):
                 self.db_proxy.updt_tbl("rst_mod", _peer_id)
                 bytes_pkt = b"".join((b"RPTO", _peer_id, options.encode()))
                 self.transport.write(bytes_pkt, (self.master, self.peerTrack[_peer_id]['dport']))
-                if self.debug:
-                    print(f"Options update sent for: {int_id(_peer_id)}")
+                print(f"Options update sent for: {int_id(_peer_id)}")
 
         except Exception as err:
             print(f"send_opts error: {err}")
@@ -390,7 +394,7 @@ if __name__ == '__main__':
     db_proxy.test_db(reactor)
 
     srv_proxy = Proxy(Master, ListenPort, CONNTRACK, PEERTRACK, BlackList, IPBlackList, Timeout,
-                      Debug, ClientInfo, DestportStart, DestPortEnd, db_proxy)
+                      Debug, ClientInfo, DestportStart, DestPortEnd, db_proxy, use_selfservice)
 
     reactor.listenUDP(ListenPort, srv_proxy, interface=ListenIP)
 
@@ -446,4 +450,3 @@ if __name__ == '__main__':
     blacklista.addErrback(loopingErrHandle)
 
     reactor.run()
-
