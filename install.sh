@@ -1,8 +1,8 @@
 #! /bin/bash
 
 # Install the required support programs
-apt-get install python3 python3-pip python3-dev libffi-dev libssl-dev cargo sed -y
-pip3 install setuptools wheel
+apt install python3 python3-pip python3-dev \
+libffi-dev libssl-dev cargo sed default-libmysqlclient-dev build-essential -y
 pip3 install -r requirements.txt
 # Copy config file 
 if [ ! -e fdmr-mon.cfg  ]; then
