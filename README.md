@@ -13,7 +13,7 @@ Some of the changes in FDMR Monitor:
 - Static and single TG's page added.
 - Data QSO's now are showed in the dashboard.
 
-FDMR Monitor has been tested on Debian v9, v10 and v11
+FDMR Monitor has been tested on Debian v10 and v11
 
 This version of FDMR Monitor requires a web server like apache2, lighttpd and 
 php 7.x running on the server.
