@@ -80,20 +80,20 @@ class MoniDB:
                             logged_in TINYINT(1) DEFAULT False NOT NULL,
                             modified TINYINT(1) DEFAULT False NOT NULL,
                             psswd BLOB(256),
-                            last_seen INT NOT NULL) CHARSET=utf8mb4''')
+                            last_seen INT NOT NULL) DEFAULT CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS talkgroup_ids (
                             id INT PRIMARY KEY UNIQUE NOT NULL,
-                            callsign VARCHAR(255) NOT NULL) CHARSET=utf8mb4''')
+                            callsign VARCHAR(255) NOT NULL) DEFAULT CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS subscriber_ids (
                             id INT PRIMARY KEY UNIQUE NOT NULL,
                             callsign VARCHAR(255) NOT NULL,
-                            name VARCHAR(255) NOT NULL) CHARSET=utf8mb4''')
+                            name VARCHAR(255) NOT NULL) DEFAULT CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS peer_ids (
                             id INT PRIMARY KEY UNIQUE NOT NULL,
-                            callsign VARCHAR(255) NOT NULL) CHARSET=utf8mb4''')
+                            callsign VARCHAR(255) NOT NULL) DEFAULT CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS last_heard (
                             date_time DATETIME NOT NULL,
@@ -101,7 +101,7 @@ class MoniDB:
                             qso_type VARCHAR(20) NOT NULL,
                             system VARCHAR(50) NOT NULL,
                             tg_num INT NOT NULL,
-                            dmr_id INT PRIMARY KEY UNIQUE NOT NULL) CHARSET=utf8mb4''')
+                            dmr_id INT PRIMARY KEY UNIQUE NOT NULL) DEFAULT CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS lstheard_log (
                             date_time DATETIME NOT NULL,
@@ -109,20 +109,20 @@ class MoniDB:
                             qso_type VARCHAR(20) NOT NULL,
                             system VARCHAR(50) NOT NULL,
                             tg_num INT NOT NULL,
-                            dmr_id INT NOT NULL) CHARSET=utf8mb4''')
+                            dmr_id INT NOT NULL) DEFAULT CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS tg_count (
                             date DATETIME NOT NULL,
                             tg_num INT PRIMARY KEY NOT NULL,
                             qso_count INT NOT NULL,
-                            qso_time DECIMAL(7,2) NOT NULL) CHARSET=utf8mb4''')
+                            qso_time DECIMAL(7,2) NOT NULL) DEFAULT CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS user_count (
                             date DATETIME NOT NULL,
                             tg_num INT NOT NULL,
                             dmr_id INT NOT NULL,
                             qso_time DECIMAL(7,2) NOT NULL,
-                            UNIQUE(tg_num, dmr_id)) CHARSET=utf8mb4''')
+                            UNIQUE(tg_num, dmr_id)) DEFAULT CHARSET=utf8mb4''')
 
             yield self.db.runInteraction(create_tbl)
             logger.info("Tables created successfully.")
