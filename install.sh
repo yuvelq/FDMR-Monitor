@@ -1,8 +1,8 @@
 #! /bin/bash
 
 # Install the required support programs
-apt install python3 python3-pip python3-dev \
-libffi-dev libssl-dev cargo sed default-libmysqlclient-dev build-essential -y
+apt install python3 python3-pip python3-dev libffi-dev libssl-dev cargo sed \
+default-libmysqlclient-dev build-essential -y
 pip3 install -r requirements.txt
 # Copy config file 
 if [ ! -e fdmr-mon.cfg  ]; then
@@ -37,7 +37,7 @@ if [ ! -z $1 ] && [ $1 == '-i' ]; then
     fi
     if [ $loop -eq 1 ]; then
       for i in {1..3}; do
-        echo -n  "${stm} " ; read input
+        echo -n "${stm} " ; read input
         if [ -z $input ]; then
           echo 'invalid value, try again.'
           if [ $i -eq 3 ]; then
