@@ -60,7 +60,7 @@ if [ "${web,,}" == 'y' ]; then
   for i in {1..3}; do
     read -p 'Insert path: ' p2web
     if [ -z "$p2web" ] | [ ! -d "$p2web" ]; then
-      echo "Path to web server root folder: '${p2fdmr}' not found, try again."
+      echo "Path to web server root folder: '${p2web}' not found, try again."
       if [ $i -eq 3 ]; then
         echo 'To many errors, skipping this.'
       fi
@@ -73,7 +73,7 @@ if [ "${web,,}" == 'y' ]; then
     read -p "This will delete the content of ${p2web} do you want to continue [y/N]: " dele
     dele=${dele:-n}
     if [ "${dele,,}" == 'y' ]; then
-      rm ${p2web}* -r
+      rm ${p2web}/* -r
       cp html/* $p2web -r
       echo "html files copied successfully into: ${p2web}"
       if [ $(systemctl show -p ActiveState --value apache2) == active ]; then
