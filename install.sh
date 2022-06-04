@@ -25,9 +25,6 @@ if [ "${branch,,}" == 'y' ]; then
   valid=''
   for i in {1..3}; do
     read -p 'Insert the path to FreeDMR folder e.g. /opt/FreeDMR/: ' p2fdmr
-    if [[ ! "$p2fdmr" == */ ]]; then
-      p2fdmr=${p2fdmr}/
-    fi
     if [ ! -d "$p2fdmr" ]; then
       echo "Path to FreeDMR folder: '${p2fdmr}' not found, try again."
       if [ $i -eq 3 ]; then
@@ -40,7 +37,7 @@ if [ "${branch,,}" == 'y' ]; then
   done
   if [ ! -z $valid ]; then
     cd $p2fdmr
-    if [ $("git branch --list Self_Service") ]; then
+    if [ "$(git branch --list Self_Service)" ]; then
       git checkout Self_Service
       cp ${mon_path}proxy/* $p2fdmr -r
       echo 'Self_Service branch already exists, proxy files copied successfully'
@@ -62,9 +59,6 @@ if [ "${web,,}" == 'y' ]; then
   echo 'Insert the path to the web server root folder e.g. /var/www/html/'
   for i in {1..3}; do
     read -p 'Insert path: ' p2web
-    if [[ ! "$p2web" == */ ]]; then
-      p2web=${p2web}/
-    fi
     if [ ! -d "$p2web" ]; then
       echo "Path to web server root folder: '${p2fdmr}' not found, try again."
       if [ $i -eq 3 ]; then
