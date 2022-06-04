@@ -95,7 +95,7 @@ else
 fi
 # Copy systemd file
 if [ -d "/etc/systemd/system/" ]; then
-  if [ ! -e "/etc/systemd/system/" ]; then
+  if [ ! -e "/etc/systemd/system/fdmr_mon.service" ]; then
     cp utils/systemd/fdmr_mon.service /etc/systemd/system/
     echo 'fdmr_mon.service copied to /etc/systemd/system/'
     systemctl daemon-reload
