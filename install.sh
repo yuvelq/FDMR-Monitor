@@ -25,7 +25,7 @@ if [ "${branch,,}" == 'y' ]; then
   valid=''
   for i in {1..3}; do
     read -p 'Insert the path to FreeDMR folder e.g. /opt/FreeDMR/: ' p2fdmr
-    if [ ! -d "$p2fdmr" ]; then
+    if [ -z "$p2fdmr" ] | [ ! -d "$p2fdmr" ]; then
       echo "Path to FreeDMR folder: '${p2fdmr}' not found, try again."
       if [ $i -eq 3 ]; then
         echo 'To many errors, skipping this.'
@@ -59,7 +59,7 @@ if [ "${web,,}" == 'y' ]; then
   echo 'Insert the path to the web server root folder e.g. /var/www/html/'
   for i in {1..3}; do
     read -p 'Insert path: ' p2web
-    if [ ! -d "$p2web" ]; then
+    if [ -z "$p2web" ] | [ ! -d "$p2web" ]; then
       echo "Path to web server root folder: '${p2fdmr}' not found, try again."
       if [ $i -eq 3 ]; then
         echo 'To many errors, skipping this.'
