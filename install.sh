@@ -165,5 +165,4 @@ if [ -d "/etc/systemd/system/" ]; then
   fi
 else
   echo '/etc/systemd/system/ folder not found, you will need to copy fdmr_mon.service into your systemd folder.'
-  sleep 3
 fi
