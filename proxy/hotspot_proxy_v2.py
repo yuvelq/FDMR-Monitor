@@ -196,9 +196,13 @@ class Proxy(DatagramProtocol):
                             return
                     self.db_proxy.updt_tbl("opt_rcvd", _peer_id)
                     # Options send by peer overrides Self Service options
-                    if self.peerTrack[_peer_id]['opt_timer'].active():
-                        self.peerTrack[_peer_id]['opt_timer'].cancel()
-                        print(f"Options received from: {int_id(_peer_id)}")
+                    if _peer_id in self.peerTrack:
+                        if self.peerTrack[_peer_id]['opt_timer'].active():
+                            self.peerTrack[_peer_id]['opt_timer'].cancel()
+                            print(f"Options received from: {int_id(_peer_id)}")
+                    else:
+                        print(f'Options received from: {int_id(_peer_id)}, '
+                              'that is not in self.peerTrack')
 
             elif _command == RPTP:              # RPTPing -- peer is pinging us
                 _peer_id = data[7:11]
