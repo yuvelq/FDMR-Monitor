@@ -202,7 +202,7 @@ def update_table(_path, _file, _url, _stale, _table):
         global not_in_db
         count = yield db_conn.table_count(_table)
         result = yield deferToThread(try_download, _path, _file, _url, _stale)
-        if "successfully" in result or count < 1:
+        if "successfully" in result or count <= 2:
             fill_table(_path, _file, _table)
             not_in_db = []
             lcl_lstmod[_table] = None
