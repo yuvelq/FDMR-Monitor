@@ -33,7 +33,7 @@ __email__      = 'adm@dmr-peru.pe'
 class ProxyDB:
     def __init__(self, host, user, psswd, db_name):
         self.db_name = db_name
-        self.dbpool = adbapi.ConnectionPool("MySQLdb", host, user, psswd, db_name)
+        self.dbpool = adbapi.ConnectionPool("MySQLdb", host, user, psswd, db_name, charset='utf8mb4')
 
     @inlineCallbacks
     def make_clients_tbl(self):
