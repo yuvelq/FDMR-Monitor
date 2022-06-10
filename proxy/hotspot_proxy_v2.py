@@ -77,14 +77,14 @@ class Proxy(DatagramProtocol):
 
     def reaper(self,_peer_id):
         if self.debug:
-            print("dead",_peer_id)
+            print('dead', _peer_id)
         if self.clientinfo and _peer_id != b'\xff\xff\xff\xff':
             print(f"{datetime.now().replace(microsecond=0)} Client: ID:{str(int_id(_peer_id)).rjust(9)} "
                   f"IP:{self.peerTrack[_peer_id]['shost'].rjust(15)} Port:{self.peerTrack[_peer_id]['sport']} Removed.")
         self.transport.write(b'RPTCL'+_peer_id, (self.master,self.peerTrack[_peer_id]['dport']))
         self.connTrack[self.peerTrack[_peer_id]['dport']] = False
         if self.selfserv:
-            self.db_proxy.updt_tbl("log_out", _peer_id)
+            self.db_proxy.updt_tbl('log_out', _peer_id)
         del self.peerTrack[_peer_id]
 
     def datagramReceived(self, data, addr):
@@ -175,7 +175,7 @@ class Proxy(DatagramProtocol):
                     _peer_id = data[5:9]
                 else:
                     _peer_id = data[4:8]        # Configure Command
-                    if self.selfserv:
+                    if self.selfserv and _peer_id in self.peerTrack:
                         mode = data[97:98].decode()
                         callsign = data[8:16].rstrip().decode()
                         self.db_proxy.ins_conf(int_id(_peer_id), _peer_id, callsign, addr[0], mode)
@@ -184,25 +184,21 @@ class Proxy(DatagramProtocol):
 
             elif _command == RPTO:              # options
                 _peer_id = data[4:8]
-                if self.selfserv:
+                if self.selfserv and _peer_id in self.peerTrack:
                     # Store Self Service password in database
-                    if data[8:].upper().startswith(b"PASS="):
+                    if data.upper().startswith(b'PASS='):
                         _psswd = data[13:]
                         if len(_psswd) >= 6:
-                            dk = pbkdf2_hmac('sha256', _psswd, b"FreeDMR", 2000).hex()
-                            self.db_proxy.updt_tbl("psswd", _peer_id, psswd=dk)
+                            dk = pbkdf2_hmac('sha256', _psswd, b'FreeDMR', 2000).hex()
+                            self.db_proxy.updt_tbl('psswd', _peer_id, psswd=dk)
                             self.transport.write (b''.join([RPTACK, _peer_id]), addr)
-                            print(f"Password stored for: {int_id(_peer_id)}")
+                            print(f'Password stored for: {int_id(_peer_id)}')
                             return
-                    self.db_proxy.updt_tbl("opt_rcvd", _peer_id)
+                    self.db_proxy.updt_tbl('opt_rcvd', _peer_id)
                     # Options send by peer overrides Self Service options
-                    if _peer_id in self.peerTrack:
-                        if self.peerTrack[_peer_id]['opt_timer'].active():
-                            self.peerTrack[_peer_id]['opt_timer'].cancel()
-                            print(f"Options received from: {int_id(_peer_id)}")
-                    else:
-                        print(f'Options received from: {int_id(_peer_id)}, '
-                              'that is not in self.peerTrack')
+                    if self.peerTrack[_peer_id]['opt_timer'].active():
+                        self.peerTrack[_peer_id]['opt_timer'].cancel()
+                        print(f'Options received from: {int_id(_peer_id)}')
 
             elif _command == RPTP:              # RPTPing -- peer is pinging us
                 _peer_id = data[7:11]
@@ -252,12 +248,12 @@ class Proxy(DatagramProtocol):
             res = yield db_proxy.slct_opt(_peer_id)
             options = res[0][0]
             if options:
-                bytes_pkt = b"".join((b"RPTO", _peer_id, options.encode()))
+                bytes_pkt = b''.join((b'RPTO', _peer_id, options.encode()))
                 self.transport.write(bytes_pkt, (self.master, self.peerTrack[_peer_id]['dport']))
-                print(f"Options sent at login for: {int_id(_peer_id)}, opt: {options}")
+                print(f'Options sent at login for: {int_id(_peer_id)}, opt: {options}')
 
         except Exception as err:
-            print(f"login_opt error: {err}")
+            print(f'login_opt error: {err}')
 
     @inlineCallbacks
     def send_opts(self):
@@ -267,13 +263,13 @@ class Proxy(DatagramProtocol):
                 _peer_id, options = item
                 if _peer_id not in self.peerTrack or not options:
                     continue
-                self.db_proxy.updt_tbl("rst_mod", _peer_id)
-                bytes_pkt = b"".join((b"RPTO", _peer_id, options.encode()))
+                self.db_proxy.updt_tbl('rst_mod', _peer_id)
+                bytes_pkt = b''.join((b'RPTO', _peer_id, options.encode()))
                 self.transport.write(bytes_pkt, (self.master, self.peerTrack[_peer_id]['dport']))
-                print(f"Options update sent for: {int_id(_peer_id)}")
+                print(f'Options update sent for: {int_id(_peer_id)}')
 
         except Exception as err:
-            print(f"send_opts error: {err}")
+            print(f'send_opts error: {err}')
 
     def lst_seen(self):
         # Update last seen
