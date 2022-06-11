@@ -46,7 +46,8 @@ def mk_config(cfg_file):
     default_values = {
         "LOCAL_SUB_FILE": "",
         "LOCAL_PEER_FILE": "",
-        "LOCAL_TGID_FILE": ""
+        "LOCAL_TGID_FILE": "",
+        "PORT": 3306
         }
 
     try:
@@ -117,7 +118,8 @@ def mk_config(cfg_file):
                     "SERVER": conf.get(section, "DB_SERVER"),
                     "USER": conf.get(section, "DB_USERNAME"),
                     "PASSWD": conf.get(section, "DB_PASSWORD"),
-                    "NAME": conf.get(section, "DB_NAME")
+                    "NAME": conf.get(section, "DB_NAME"),
+                    "PORT": conf.getint(section, "DB_PORT")
                     }
             elif section == "DEFAULT":
                 pass
@@ -128,7 +130,7 @@ def mk_config(cfg_file):
         return CONF
 
     except Exception as err:
-        sys.exit(f"We found an error when parsing config file:\n{err}\n{type(err)}")
+        sys.exit(f"We found an error when parsing config file:\n{err}")
                 
 
 if __name__ == '__main__':

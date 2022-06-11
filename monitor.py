@@ -1204,8 +1204,8 @@ if __name__ == "__main__":
                 "\n\n\tFDMR-Monitor OA4DOA 2022\n\n")
 
     # Create an instance of MoniDB
-    db_conn = MoniDB(CONF["DB"]["SERVER"], CONF["DB"]["USER"],
-                     CONF["DB"]["PASSWD"], CONF["DB"]["NAME"])
+    db_conn = MoniDB(CONF["DB"]["SERVER"], CONF["DB"]["USER"], CONF["DB"]["PASSWD"],
+                     CONF["DB"]["NAME"], CONF["DB"]["PORT"])
     # Test the connection to the database
     db_conn.test_db(reactor)
 

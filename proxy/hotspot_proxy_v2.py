@@ -186,7 +186,7 @@ class Proxy(DatagramProtocol):
                 _peer_id = data[4:8]
                 if self.selfserv and _peer_id in self.peerTrack:
                     # Store Self Service password in database
-                    if data.upper().startswith(b'PASS='):
+                    if data[8:].upper().startswith(b'PASS='):
                         _psswd = data[13:]
                         if len(_psswd) >= 6:
                             dk = pbkdf2_hmac('sha256', _psswd, b'FreeDMR', 2000).hex()
@@ -349,6 +349,7 @@ if __name__ == '__main__':
         db_username = 'root'
         db_password = ''
         db_name = 'test'
+        db_port = 3306
 
 #*******************        
     
@@ -390,7 +391,7 @@ if __name__ == '__main__':
 
     # Create an instance of the db_proxy to make the clients table and them
     # pass it to the proxy instance
-    db_proxy = ProxyDB(db_server, db_username, db_password, db_name)
+    db_proxy = ProxyDB(db_server, db_username, db_password, db_name, db_port)
     db_proxy.test_db(reactor)
 
     srv_proxy = Proxy(Master, ListenPort, CONNTRACK, PEERTRACK, BlackList, IPBlackList, Timeout,

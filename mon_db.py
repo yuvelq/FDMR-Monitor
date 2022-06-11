@@ -48,8 +48,9 @@ def sec_time(_time):
 
 
 class MoniDB:
-    def __init__(self, host, user, psswd, db_name):
-        self.db = adbapi.ConnectionPool("MySQLdb", host, user, psswd, db_name, charset='utf8mb4')
+    def __init__(self, host, user, psswd, db_name, port):
+        self.db = adbapi.ConnectionPool("MySQLdb", host, user, psswd, db_name,
+                                        port=port, charset='utf8mb4')
 
     @inlineCallbacks
     def test_db(self, _reactor):
@@ -357,8 +358,8 @@ if __name__ == '__main__':
         if "DB" not in CONF:
             sys_exit("Not SELF SERVICE stanza on config file")
         # Create an instance of MoniDB
-        _db = MoniDB(CONF["DB"]["SERVER"], CONF["DB"]["USER"],
-                     CONF["DB"]["PASSWD"], CONF["DB"]["NAME"])
+        _db = MoniDB(CONF["DB"]["SERVER"], CONF["DB"]["USER"], CONF["DB"]["PASSWD"],
+                     CONF["DB"]["NAME"], CONF["DB"]["PORT"])
         _db.test_db(reactor)
         if args.create_tbl:
             # Create tables
