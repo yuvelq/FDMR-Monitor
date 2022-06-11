@@ -47,47 +47,27 @@ be prepeard with the next information to make the installation easier:
   - Database password
   - Database name
 
-
-  cd /opt
-  sudo git clone https://github.com/yuvelq/Self_Service.git  
+```
+  cd /opt  
+  sudo git clone https://github.com/yuvelq/FDMR-Monitor.git  
   cd FDMR-Monitor  
+  sudo git checkout Self_service_dev  
   sudo chmod +x install.sh  
-  sudo ./install.sh
-  sudo cp fdmr-mon_SAMPLE.cfg fdmr-mon.cfg
-  - Edit fdmr-mon.cfg and adjust it to your server configuration:
-    sudo nano fdmr-mon.cfg
-
-  - Give readig permission to the config file:
-    sudo chmod 644 fdmr-mon.cfg
-
-  Copy the contents of the /opt/FDMR-Monitor/html directory to 
-  the web server directory.
-  - This example will work for Apache server:
-    sudo cp /opt/FDMR-Monitor/html/* /var/www/html/ -r
-
-  With this configuration you server will be available at:
-    http://yourserverhost.org/
-
-  Now you can configure the theme color and name for your Dashboard from the config.cfg file also
-  you can define the height of the Server Activity 
-  window: 45 1 row, 60 2 rows, 80 3 rows:
+  sudo ./install.sh  
+  
+  Now you can configure the theme color and name for your Dashboard from the config.cfg file, you  
+  can also define the height of the Server Activity window: 45 1 row, 60 2 rows, 80 3 rows:  
   HEIGHT_ACTIVITY = 45
-
-  Now if you set TGCOUNT_INC to True the button will be added automatically
+  
+  If you set TGCOUNT_INC to True the button will be added automatically
   If you want to modify or add any other button you will find a buttons.php file in the root of your
-  web server.
+  web server.  
   
-  You can replace the logo with an image of your preference in the img/ directory img/logo.png
+  If you make any modification to the configuartion file please restart fdmr_mon.service:  
+  - sudo systemctl restart fdmr_mon  
   
-  - This will rotate the log file:
-    sudo cp utils/logrotate/fdmr_mon /etc/logrotate.d/
-
-  - Add the systemd file:
-    sudo cp utils/systemd/fdmr_mon.service /lib/systemd/system/
-
-  - Enable the monitor to start automatically after reboot:
-    sudo systemctl enable fdmr_mon
-
+  You can replace the logo with an image of your preference in the img/ directory img/logo.png  
+    
   - You can start, stop, or restart with the next commands:
     sudo systemctl start fdmr_mon
     sudo systemctl stop fdmr_mon
@@ -104,7 +84,7 @@ be prepeard with the next information to make the installation easier:
   sudo rm mon.db
   sudo python3 mon_db.py
   sudo systemct start fdmr_mon
-
+```
 
 ---
 
