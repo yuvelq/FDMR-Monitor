@@ -51,7 +51,7 @@ be prepeard with the next information to make the installation easier:
   cd /opt  
   sudo git clone https://github.com/yuvelq/FDMR-Monitor.git  
   cd FDMR-Monitor  
-  sudo git checkout Self_service_dev  
+  sudo git checkout Self_Service  
   sudo chmod +x install.sh  
   sudo ./install.sh  
   
