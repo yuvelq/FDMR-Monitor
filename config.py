@@ -87,7 +87,7 @@ def mk_config(cfg_file):
                     "LCL_SUBS": conf.get(section, "LOCAL_SUB_FILE"),
                     "LCL_PEER": conf.get(section, "LOCAL_PEER_FILE"),
                     "LCL_TGID": conf.get(section, "LOCAL_TGID_FILE"),
-                    "RELOAD_TIME": conf.getint(section, "RELOAD_TIME") * 864000,
+                    "RELOAD_TIME": conf.getint(section, "RELOAD_TIME") * 86400,
                     "PEER_URL": conf.get(section, "PEER_URL"),
                     "SUBS_URL": conf.get(section, "SUBSCRIBER_URL"),
                     "TGID_URL": conf.get(section, "TGID_URL")
