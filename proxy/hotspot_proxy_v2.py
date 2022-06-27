@@ -322,6 +322,13 @@ if __name__ == '__main__':
         ClientInfo = config.getboolean('PROXY','ClientInfo')
         BlackList = json.loads(config.get('PROXY','BlackList'))
         IPBlackList = json.loads(config.get('PROXY','IPBlackList'))
+        # Self Service
+        use_selfservice = config.getboolean('SELF SERVICE', 'use_selfservice')
+        db_server = config.get('SELF SERVICE', 'server')
+        db_username = config.get('SELF SERVICE', 'username')
+        db_password = config.get('SELF SERVICE', 'password')
+        db_name = config.get('SELF SERVICE', 'db_name')
+        db_port = config.getint('SELF SERVICE', 'port')
 
     except configparser.Error as err:
         print('Error processing configuration file -- {}'.format(err))
