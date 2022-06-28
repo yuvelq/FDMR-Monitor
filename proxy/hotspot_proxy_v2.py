@@ -396,10 +396,12 @@ if __name__ == '__main__':
     if ListenIP == '::' and IsIPv4Address(Master):
         Master = '::ffff:' + Master
 
-    # Create an instance of the db_proxy to make the clients table and them
-    # pass it to the proxy instance
-    db_proxy = ProxyDB(db_server, db_username, db_password, db_name, db_port)
-    db_proxy.test_db(reactor)
+    if use_selfservice:
+        # Create an instance of db_proxy and them pass it to the proxy
+        db_proxy = ProxyDB(db_server, db_username, db_password, db_name, db_port)
+        db_proxy.test_db(reactor)
+    else:
+        db_proxy = None
 
     srv_proxy = Proxy(Master, ListenPort, CONNTRACK, PEERTRACK, BlackList, IPBlackList, Timeout,
                       Debug, ClientInfo, DestportStart, DestPortEnd, db_proxy, use_selfservice)
@@ -410,17 +412,18 @@ if __name__ == '__main__':
         print('(GLOBAL) STOPPING REACTOR TO AVOID MEMORY LEAK: Unhandled error innowtimed loop.\n {}'.format(failure))
         reactor.stop()
 
-    # Options loop
-    opts_loop = task.LoopingCall(srv_proxy.send_opts)
-    opts_loop.start(10).addErrback(loopingErrHandle)
+    if use_selfservice:
+        # Options loop
+        opts_loop = task.LoopingCall(srv_proxy.send_opts)
+        opts_loop.start(10).addErrback(loopingErrHandle)
 
-    # Clean table every hour
-    cl_tbl = task.LoopingCall(db_proxy.clean_tbl)
-    cl_tbl.start(3600).addErrback(loopingErrHandle)
+        # Clean table every hour
+        cl_tbl = task.LoopingCall(db_proxy.clean_tbl)
+        cl_tbl.start(3600).addErrback(loopingErrHandle)
 
-    # Update last seen loop
-    ls_loop = task.LoopingCall(srv_proxy.lst_seen)
-    ls_loop.start(120).addErrback(loopingErrHandle)
+        # Update last seen loop
+        ls_loop = task.LoopingCall(srv_proxy.lst_seen)
+        ls_loop.start(120).addErrback(loopingErrHandle)
 
     def stats():
         count = 0
