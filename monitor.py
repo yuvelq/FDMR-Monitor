@@ -56,7 +56,7 @@ from config import mk_config
 
 
 # SP2ONG - Increase the value if HBlink link break occurs
-NetstringReceiver.MAX_LENGTH = 500000000
+NetstringReceiver.MAX_LENGTH = 500000
 
 # Opcodes for reporting protocol to HBlink
 OPCODE = {
@@ -1077,7 +1077,7 @@ class dashboard(WebSocketServerProtocol):
             msg = payload.decode("utf-8").split(",")
             logger.info(f"Text message received: {payload}")
             if msg[0] != "conf":
-                return None
+                return
             for group in msg[1:]:
                 if group not in GROUPS:
                     continue
@@ -1206,7 +1206,7 @@ if __name__ == "__main__":
     # Create an instance of MoniDB
     db_conn = MoniDB(CONF["DB"]["SERVER"], CONF["DB"]["USER"], CONF["DB"]["PASSWD"],
                      CONF["DB"]["NAME"], CONF["DB"]["PORT"])
-    # Test the connection to the database
+    # Test database connection
     db_conn.test_db(reactor)
 
     # Jinja2 Stuff
@@ -1228,7 +1228,7 @@ if __name__ == "__main__":
     update_stats = task.LoopingCall(build_stats)
     update_stats.start((CONF["WS"]["FREQ"])).addErrback(error_hdl)
 
-    # Start the timout loop
+    # Start the timeout loop
     if CONF["WS"]["CLT_TO"]:
         timeout = task.LoopingCall(timeout_clients)
         timeout.start(10).addErrback(error_hdl)
