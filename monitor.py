@@ -56,7 +56,7 @@ from config import mk_config
 
 
 # SP2ONG - Increase the value if HBlink link break occurs
-NetstringReceiver.MAX_LENGTH = 500000
+NetstringReceiver.MAX_LENGTH = 5000000
 
 # Opcodes for reporting protocol to HBlink
 OPCODE = {
