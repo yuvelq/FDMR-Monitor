@@ -12,7 +12,7 @@
     {% for itm in _table %}
     <tr>
       <td class="txt-b5651d"><b>{{ itm[0] }}</b></td>
-      <td class="txt-green"><b>{{ itm[1] }}</b></td>
+      <td class="txt-green"><b>{{ itm[1]|safe }}</b></td>
       <td>{{ itm[2] }}</td>
       <td><b>{{ itm[3] }}</b></td>
       <td class="txt-002d62"><b>{{ itm[4]|join(' - ') }}</b></td>
