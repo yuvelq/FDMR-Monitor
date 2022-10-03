@@ -59,19 +59,19 @@ Install package:
    
 Change scripts to execute:
 
-  chmod +x /opt/HBMonv2/sysinfo/cpu.sh
-  chmod +x /opt/HBMonv2/sysinfo/graph.sh
-  chmod +x /opt/HBMonv2/sysinfo/rrd-db.sh
+  chmod +x /opt/FDMR-Monitor/sysinfo/cpu.sh
+  chmod +x /opt/FDMR-Monitor/sysinfo/graph.sh
+  chmod +x /opt/FDMR-Monitor/sysinfo/rrd-db.sh
   
 Run script  create database
 
-   cd /opt/HBMonv2/sysinfo
+   cd /opt/FDMR-Monitor/sysinfo
    ./rrd-db.sh 
 
 
 Edit file
     
-  /opt/HBMonv2/sysinfo/cpu.sh
+  /opt/FDMR-Monitor/sysinfo/cpu.sh
 
 Setup in WEB_PATH path to your web server html directory 
 for example /var/www/html or /var/www/html/hbmon 
@@ -79,7 +79,7 @@ where is located your html files of HBMon
 
 Edit file
     
-  /opt/HBMonv2/sysinfo/graph.sh
+  /opt/FDMR-Monitor/sysinfo/graph.sh
 
 Setup in WEB_PATH path to your web server html directory 
 for example /var/www/html or /var/www/html/hbmon 
