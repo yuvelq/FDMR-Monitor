@@ -5,12 +5,12 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="refresh" content="300">
-  <title>FreeDMR Monitor - System Info</title>
+<title>OZ-DMR Networks</title>
   <link rel="stylesheet" type="text/css" href="css/styles.php">
   <meta name="description" content="Copyright (c) 2016-22.The Regents of the K0USY Group. All rights reserved. Version OA4DOA 2022 (v270422)">
 </head>
-<body>
-  <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
+<body style="background-color:powderblue;">
+  <img class="img-top" src="https://www.oz-dmr.uk/wp-content/uploads/2022/05/logo1.png" alt="">
   <h2><?php echo REPORT_NAME;?></h2>
   <div><?php include_once 'buttons.php';?></div>
 
@@ -26,9 +26,9 @@
       <!-- CPU loads -->
       <img alt="" src="img/cpu.png">
       <!-- Network traffic -->
-      <img alt="" src="img/mrtg/localhost_2-day.png">
+      <a target="_blank" href="https://dash.oz-dmr.uk/img/mrtg/localhost_2.html" ><img alt="" src="img/mrtg/localhost_2-day.png"></a>
     </div>
-    <p><span class="txt-blue"><b>BLUE</b></span> Outgoing Traffic in Bits per Second | <span class="txt-green"><b>GREEN</b></span> Incoming Traffic in Bits per Second</p>
+    <p><span class="txt-blue"><b>BLUE</b></span> Outgoing Traffic in Bits per Second&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="txt-green"><b>GREEN</b></span> Incoming Traffic in Bits per Second</p>
   </fieldset>
   <footer>
     <p>

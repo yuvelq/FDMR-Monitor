@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Setup path web server directory where is html files of HBMon
-WEB_PATH='/var/www/html/'
+WEB_PATH='/var/www/html'
 
 # Get values
 
@@ -12,19 +12,19 @@ WEB_PATH='/var/www/html/'
 
 #For Raspberry PI, comment next 4 lines if you don't want temperature:
 
-FILE=/sys/class/thermal/thermal_zone0/temp
-if [[ -f "$FILE" ]]; then
-tempC=`cat /sys/class/thermal/thermal_zone0/temp |awk '{printf("%.1f",$1/1000)}'`
-fi
+#FILE=/sys/class/thermal/thermal_zone0/temp
+#if [[ -f "$FILE" ]]; then
+#tempC=`cat /sys/class/thermal/thermal_zone0/temp |awk '{printf("%.1f",$1/1000)}'`
+#fi
 
 # For computers not like Raspberry PI install package 
 # at install lm-sensors 
 # and run: sensors-detect
 # after this check result run command: sensors to see temperature CPU
 
-if [ -z "$tempC" ] ; then
-tempC=`sensors | grep -i "Core 0" | grep "$1" | sed -re "s/.*:[^+]*?[+]([.0-9]+)[ °]C.*/\1/g"`
-fi
+#if [ -z "$tempC" ] ; then
+#tempC=`sensors | grep -i "Core 0" | grep "$1" | sed -re "s/.*:[^+]*?[+]([.0-9]+)[ °]C.*/\1/g"`
+#fi
 
 #=====================================
 
@@ -43,12 +43,12 @@ NOW=`date -u +%s`
 # Update db =====================================================
 
 if [ -n "$tempC" ] ; then
-/usr/bin/rrdtool update /opt/HBMonv2/sysinfo/tempC.rrd $NOW:$tempC
+/usr/bin/rrdtool update /opt/FDMR-Monitor/sysinfo/tempC.rrd $NOW:$tempC
 fi
 
-/usr/bin/rrdtool update /opt/HBMonv2/sysinfo/mem.rrd $NOW:$mem
-/usr/bin/rrdtool update /opt/HBMonv2/sysinfo/hdd.rrd $NOW:$hdd
-/usr/bin/rrdtool update /opt/HBMonv2/sysinfo/load.rrd $NOW:$load
+/usr/bin/rrdtool update /opt/FDMR-Monitor/sysinfo/mem.rrd $NOW:$mem
+/usr/bin/rrdtool update /opt/FDMR-Monitor/sysinfo/hdd.rrd $NOW:$hdd
+/usr/bin/rrdtool update /opt/FDMR-Monitor/sysinfo/load.rrd $NOW:$load
 
 # Generate images ================================================================
 
@@ -58,7 +58,7 @@ if [ -n "$tempC" ] ; then
 /usr/bin/rrdtool graph $WEB_PATH/img/tempC.png -t "Temperature CPU 24H - `/bin/date`" \
 --rigid --alt-y-grid --alt-autoscale --units-exponent 0 \
 -w 600 -h 70 --upper-limit 100 --vertical-label 'Temperature [C]' --slope-mode --start -86400 \
-DEF:ave=/opt/HBMonv2/sysinfo/tempC.rrd:temp:AVERAGE \
+DEF:ave=/opt/FDMR-Monitor/sysinfo/tempC.rrd:temp:AVERAGE \
 CDEF:C=ave,100,GE,ave,0,IF AREA:C#7F0000: \
 CDEF:D=ave,95,GE,ave,100,LT,ave,100,IF,0,IF AREA:D#9E0000: \
 CDEF:E=ave,90,GE,ave,95,LT,ave,95,IF,0,IF AREA:E#BD0000: \
@@ -84,8 +84,8 @@ CDEF:A=ave \
 VDEF:V=ave,AVERAGE \
 LINE1:ave \
 LINE1:A#000000:Temperature \
-DEF:tmax=/opt/HBMonv2/sysinfo/tempC.rrd:temp:MAX \
-DEF:tmin=/opt/HBMonv2/sysinfo/tempC.rrd:temp:MIN \
+DEF:tmax=/opt/FDMR-Monitor/sysinfo/tempC.rrd:temp:MAX \
+DEF:tmin=/opt/FDMR-Monitor/sysinfo/tempC.rrd:temp:MIN \
 'GPRINT:ave:LAST:Last\: %2.1lf C' \
 'GPRINT:tmin:MIN:Minimum\: %2.1lf C' \
 'GPRINT:tmax:MAX:Maximum\: %2.1lf C\j' >/dev/null
@@ -95,7 +95,7 @@ fi
 /usr/bin/rrdtool graph $WEB_PATH/img/mem.png -t "Memory usage 24H - `grep MemTotal /proc/meminfo | awk '{printf "%.0f MB", $2/1024}'` - `/bin/date`" \
 --rigid --alt-y-grid --alt-autoscale --units-exponent 0 \
 -w 600 -h 70 --upper-limit 100 --vertical-label 'Memory usage [%]' --slope-mode --start -86400 \
-DEF:ave=/opt/HBMonv2/sysinfo/mem.rrd:mem:AVERAGE \
+DEF:ave=/opt/FDMR-Monitor/sysinfo/mem.rrd:mem:AVERAGE \
 CDEF:C=ave,100,GE,ave,0,IF AREA:C#7F0000: \
 CDEF:D=ave,95,GE,ave,100,LT,ave,100,IF,0,IF AREA:D#9E0000: \
 CDEF:E=ave,90,GE,ave,95,LT,ave,95,IF,0,IF AREA:E#BD0000: \
@@ -121,8 +121,8 @@ CDEF:A=ave \
 VDEF:V=ave,AVERAGE \
 LINE1:ave \
 LINE1:A#000000:Memory_usage_% \
-DEF:tmax=/opt/HBMonv2/sysinfo/mem.rrd:mem:MAX \
-DEF:tmin=/opt/HBMonv2/sysinfo/mem.rrd:mem:MIN \
+DEF:tmax=/opt/FDMR-Monitor/sysinfo/mem.rrd:mem:MAX \
+DEF:tmin=/opt/FDMR-Monitor/sysinfo/mem.rrd:mem:MIN \
 'GPRINT:ave:LAST:Last\: %2.1lf ' \
 'GPRINT:tmin:MIN:Minimum\: %2.1lf ' \
 'GPRINT:tmax:MAX:Maximum\: %2.1lf \j' >/dev/null
@@ -131,7 +131,7 @@ DEF:tmin=/opt/HBMonv2/sysinfo/mem.rrd:mem:MIN \
 /usr/bin/rrdtool graph $WEB_PATH/img/hdd.png -t "Disk usage 24H - Size: `df -h / |awk 'NR==2 { print $2 }'` - `/bin/date`" \
 --rigid --alt-y-grid --alt-autoscale --units-exponent 0 \
 -w 600 -h 70 --upper-limit 100 --vertical-label 'Disk usage [%]' --slope-mode --start -86400 \
-DEF:ave=/opt/HBMonv2/sysinfo/hdd.rrd:hdd:AVERAGE \
+DEF:ave=/opt/FDMR-Monitor/sysinfo/hdd.rrd:hdd:AVERAGE \
 CDEF:C=ave,100,GE,ave,0,IF AREA:C#7F0000: \
 CDEF:D=ave,95,GE,ave,100,LT,ave,100,IF,0,IF AREA:D#9E0000: \
 CDEF:E=ave,90,GE,ave,95,LT,ave,95,IF,0,IF AREA:E#BD0000: \
@@ -157,8 +157,8 @@ CDEF:A=ave \
 VDEF:V=ave,AVERAGE \
 LINE1:ave \
 LINE1:A#000000:Disk_usage_% \
-DEF:tmax=/opt/HBMonv2/sysinfo/hdd.rrd:hdd:MAX \
-DEF:tmin=/opt/HBMonv2/sysinfo/hdd.rrd:hdd:MIN \
+DEF:tmax=/opt/FDMR-Monitor/sysinfo/hdd.rrd:hdd:MAX \
+DEF:tmin=/opt/FDMR-Monitor/sysinfo/hdd.rrd:hdd:MIN \
 'GPRINT:ave:LAST:Last\: %2.1lf ' \
 'GPRINT:tmin:MIN:Minimum\: %2.1lf ' \
 'GPRINT:tmax:MAX:Maximum\: %2.1lf \j' >/dev/null

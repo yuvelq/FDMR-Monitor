@@ -4,13 +4,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FDMR Monitor - STATUS</title>
+  <title>OZ-DMR Networks</title>
   <script src="scripts/hbmon.js"></script>
   <link rel="stylesheet" type="text/css" href="css/styles.php">
   <meta name="description" content="Copyright (c) 2016-22.The Regents of the K0USY Group. All rights reserved. Version OA4DOA 2022 (v270422)">
 </head>
-<body>
-  <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
+<body style="background-color:powderblue;">
+  <img class="img-top" src="https://www.oz-dmr.uk/wp-content/uploads/2022/05/logo1.png" alt="">
   <h2><?php echo REPORT_NAME; ?></h2>
   <div><?php include_once 'buttons.php';?></div>
   <noscript>You must enable JavaScript</noscript>
@@ -26,3 +26,4 @@
   </footer>
 </body>
 </html>
+
