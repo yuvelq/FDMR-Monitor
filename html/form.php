@@ -185,8 +185,8 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       $_SESSION["changed"] = True;
     }
   }
-   //lang
-   if (isset($_POST["lang"])) {
+  //lang
+  if (isset($_POST["lang"])) {
     $lang = check_input($_POST["lang"]);
 
     if ($lang != $_SESSION["opt_base"]["LANG="]) {
@@ -221,10 +221,12 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         }
       }
       $final_opt .= $key.$value.";";
+  
+      $stmt = mysqli_prepare($db_conn, "UPDATE Clients SET options=?, modified=True WHERE int_id=? and opt_rcvd=False");
+      $stmt -> bind_param("si",$final_opt, $_SESSION["opt_owner"]);
+      $stmt -> execute();
     }
-    $stmt = mysqli_prepare($db_conn, "UPDATE Clients SET options=?, modified=True WHERE int_id=? and opt_rcvd=False");
-    $stmt -> bind_param("si",$final_opt, $_SESSION["opt_owner"]);
-    $stmt -> execute();
+    
     if (mysqli_affected_rows($db_conn)) {
       $status = _DATA_UPDT;
       $class = "status-succes";
@@ -293,8 +295,8 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         <option value="enable" <?php if($_SESSION["opt_base"]["VOICE="]=="1"){echo "selected";}?>><?php echo _ENABLE?></option>
         <option value="disable" <?php if($_SESSION["opt_base"]["VOICE="]=="0"){echo "selected";}?>><?php echo _DISABLE?></option>
       </select>
-     <!-- Lang -->
-     <h3>Server Voice Language</h3>
+      <!-- Lang -->
+      <h3>Server Voice Language</h3>
       <div class="actual"><?php echo _ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["LANG="]==""){echo _DEFAULT_STS;}else{echo $_SESSION["opt_base"]["LANG="];}?></span></div>
       <select name="lang" >
         <option value="CW" <?php if($_SESSION["opt_base"]["VOICE="]=="CW"){echo "selected";}?>><?php echo "CW"?></option>
@@ -308,6 +310,12 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         <option value="fr_FR" <?php if($_SESSION["opt_base"]["LANG="]=="fr_FR"){echo "selected";}?>><?php echo "fr_FR"?></option>
         <option value="pt_PT" <?php if($_SESSION["opt_base"]["LANG="]=="pt_PT"){echo "selected";}?>><?php echo "pt_PT"?></option>
         <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="th_TH"){echo "selected";}?>><?php echo "th_TH"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="dk_DK"){echo "selected";}?>><?php echo "dk_DK"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="en_US"){echo "selected";}?>><?php echo "en_US"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="it_IT"){echo "selected";}?>><?php echo "it_IT"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="no_NO"){echo "selected";}?>><?php echo "no_NO"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="pl_PL"){echo "selected";}?>><?php echo "pl_PL"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="se_SE"){echo "selected";}?>><?php echo "se_SE"?></option>
       </select>
       <!-- Dial -->
       <?php include_once "selfserv/dial.php";?>

@@ -81,6 +81,7 @@ class MoniDB:
                             logged_in TINYINT(1) DEFAULT False NOT NULL,
                             modified TINYINT(1) DEFAULT False NOT NULL,
                             psswd BLOB(256),
+                            dev_key VARCHAR(20),
                             last_seen INT NOT NULL) DEFAULT CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS talkgroup_ids (
