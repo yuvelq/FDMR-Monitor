@@ -1,8 +1,10 @@
+setuptools
+wheel
 Twisted
 dmr_utils3
 bitstring
 autobahn
-jinja2==2.11.3
-MarkupSafe==2.0.1
-pyOpenSSL==23.0.0
-service-identity==21.1.0
+jinja2
+MarkupSafe
+pyOpenSSL
+service-identity
