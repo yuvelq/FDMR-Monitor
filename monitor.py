@@ -53,7 +53,9 @@ from dmr_utils3.utils import int_id, try_download, bytes_4
 # Local modules and config variables
 from mon_db import MoniDB
 from config import mk_config
+from log import create_logger
 
+__version__ = '1.0.0'
 
 # SP2ONG - Increase the value if HBlink link break occurs
 NetstringReceiver.MAX_LENGTH = 500000000
@@ -1183,27 +1185,23 @@ def cleaning_loop():
 
 #######################################################################
 if __name__ == "__main__":
-    # Define loggin configuration
-    logger = logging.getLogger("fdmr-mon")
-    logger.setLevel(CONF["LOG"]["LOG_LEVEL"])
-    # Log handlers
-    fh = logging.FileHandler(CONF["LOG"]["P2F_LOG"], encoding="utf8")
-    fh.setLevel(level=CONF["LOG"]["LOG_LEVEL"])
-    ch = logging.StreamHandler()
-    ch.setLevel(level=CONF["LOG"]["LOG_LEVEL"])
-    # Log formatter
-    formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%Y-%m-%d %H:%M:%S")
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    # Add handlers
-    logger.addHandler(fh)
-    logger.addHandler(ch)
+    # Configure logger
+    log_conf = {
+        'PATH': CONF["LOG"]["PATH"],
+        'LOG_FILE': CONF["LOG"]["LOG_FILE"],
+        'LOG_LEVEL': CONF["LOG"]["LOG_LEVEL"],
+        'LOG_HANDLERS': [
+            'console',
+            'file'
+            ]
+        }
+    logger = create_logger(log_conf)
 
     logger.info("monitor.py starting up")
-    logger.info("\n\n\tCopyright (c) 2016-2022\n\tThe Regents of the K0USY Group. All rights "
+    logger.info("\n\n\tCopyright (c) 2016-2023\n\tThe Regents of the K0USY Group. All rights "
                 "reserved.\n\n\tPython 3 port:\n\t2019 Steve Miller, KC1AWV <smiller@kc1awv.net>"
-                "\n\n\tFDMR-Monitor OA4DOA 2022\n\n")
-
+                "\n\n\tFDMR-Monitor OA4DOA\n\n")
+    
     # Create an instance of MoniDB
     db_conn = MoniDB("mon.db")
 

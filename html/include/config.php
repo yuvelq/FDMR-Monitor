@@ -1,5 +1,5 @@
 <?php
-
+// Version 1.0.0
 // Report all errors except E_NOTICE
 error_reporting(E_ALL & ~E_NOTICE);
 

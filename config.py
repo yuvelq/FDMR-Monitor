@@ -24,6 +24,7 @@ from pathlib import Path
 
 
 __author__ = 'Christian Quiroz, OA4DOA'
+__verion__ = '1.0.0'
 __copyright__ = 'Copyright (c) 2022 Christian Quiroz, OA4DOA'
 __license__ = 'GNU GPLv3'
 __maintainer__ = 'Christian Quiroz, OA4DOA'

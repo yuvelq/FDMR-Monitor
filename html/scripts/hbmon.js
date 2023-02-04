@@ -1,3 +1,4 @@
+// Version 1.0.0
 var sock = null;
 var ellog = null;
 const conf_groups = [];
