@@ -61,6 +61,10 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
           $_SESSION["opt_base"]["SINGLE="] = $item_exp[1];
         } elseif ($type == "VOICE") {
           $_SESSION["opt_base"]["VOICE="] = $item_exp[1];
+        }elseif ($type == "LANG") {
+          $_SESSION["opt_base"]["LANG="] = $item_exp[1];
+        }elseif ($type == "DIAL") {
+          $_SESSION["opt_base"]["DIAL="] = $item_exp[1];
         }
       }
     }
@@ -181,6 +185,24 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       $_SESSION["changed"] = True;
     }
   }
+  //lang
+  if (isset($_POST["lang"])) {
+    $lang = check_input($_POST["lang"]);
+
+    if ($lang != $_SESSION["opt_base"]["LANG="]) {
+      $_SESSION["opt_base"]["LANG="] = $lang;
+      $_SESSION["changed"] = True;
+    }
+  }
+//dial
+  if (isset($_POST["dial"])) {
+    $dial = check_input($_POST["dial"]);
+
+    if ($dial != $_SESSION["opt_base"]["DIAL="]) {
+      $_SESSION["opt_base"]["DIAL="] = $dial;
+      $_SESSION["changed"] = True;
+    }
+  }
   // Make the options string and send it to the DMR server
   if ($_SESSION["changed"] and !$ts1Err and !$ts2Err and !$timerErr) {
     $final_opt = "";
@@ -199,10 +221,12 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         }
       }
       $final_opt .= $key.$value.";";
+  
+      $stmt = mysqli_prepare($db_conn, "UPDATE Clients SET options=?, modified=True WHERE int_id=? and opt_rcvd=False");
+      $stmt -> bind_param("si",$final_opt, $_SESSION["opt_owner"]);
+      $stmt -> execute();
     }
-    $stmt = mysqli_prepare($db_conn, "UPDATE Clients SET options=?, modified=True WHERE int_id=? and opt_rcvd=False");
-    $stmt -> bind_param("si",$final_opt, $_SESSION["opt_owner"]);
-    $stmt -> execute();
+    
     if (mysqli_affected_rows($db_conn)) {
       $status = _DATA_UPDT;
       $class = "status-succes";
@@ -271,6 +295,30 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         <option value="enable" <?php if($_SESSION["opt_base"]["VOICE="]=="1"){echo "selected";}?>><?php echo _ENABLE?></option>
         <option value="disable" <?php if($_SESSION["opt_base"]["VOICE="]=="0"){echo "selected";}?>><?php echo _DISABLE?></option>
       </select>
+      <!-- Lang -->
+      <h3>Server Voice Language</h3>
+      <div class="actual"><?php echo _ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["LANG="]==""){echo _DEFAULT_STS;}else{echo $_SESSION["opt_base"]["LANG="];}?></span></div>
+      <select name="lang" >
+        <option value="CW" <?php if($_SESSION["opt_base"]["VOICE="]=="CW"){echo "selected";}?>><?php echo "CW"?></option>
+        <option value="cy_GB" <?php if($_SESSION["opt_base"]["LANG="]=="cy_GB"){echo "selected";}?>><?php echo "cy_GB"?></option>
+        <option value="de_DE" <?php if($_SESSION["opt_base"]["LANG="]=="de_DE"){echo "selected";}?>><?php echo "de_DE"?></option>
+        <option value="el_GR" <?php if($_SESSION["opt_base"]["LANG="]=="el_GR"){echo "selected";}?>><?php echo "el_GR"?></option>
+        <option value="en_GB" <?php if($_SESSION["opt_base"]["LANG="]=="en_GB"){echo "selected";}?>><?php echo "en_GB"?></option>
+        <option value="en_GB_2" <?php if($_SESSION["opt_base"]["LANG="]=="en_GB_2"){echo "selected";}?>><?php echo "en_GB_2"?></option>
+        <option value="es_ES" <?php if($_SESSION["opt_base"]["LANG="]=="es_ES"){echo "selected";}?>><?php echo "es_ES"?></option>
+        <option value="es_ES_2" <?php if($_SESSION["opt_base"]["LANG="]=="es_ES_2"){echo "selected";}?>><?php echo "es_ES_2"?></option>
+        <option value="fr_FR" <?php if($_SESSION["opt_base"]["LANG="]=="fr_FR"){echo "selected";}?>><?php echo "fr_FR"?></option>
+        <option value="pt_PT" <?php if($_SESSION["opt_base"]["LANG="]=="pt_PT"){echo "selected";}?>><?php echo "pt_PT"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="th_TH"){echo "selected";}?>><?php echo "th_TH"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="dk_DK"){echo "selected";}?>><?php echo "dk_DK"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="en_US"){echo "selected";}?>><?php echo "en_US"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="it_IT"){echo "selected";}?>><?php echo "it_IT"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="no_NO"){echo "selected";}?>><?php echo "no_NO"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="pl_PL"){echo "selected";}?>><?php echo "pl_PL"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="se_SE"){echo "selected";}?>><?php echo "se_SE"?></option>
+      </select>
+      <!-- Dial -->
+      <?php include_once "selfserv/dial.php";?>
       <div class="<?php echo $class?>"><b><?php echo $status?></b></div>
       <input class="form-button" type="submit" value="<?php echo _SUBMIT?>">
     </form>

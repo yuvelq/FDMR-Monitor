@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 ###############################################################################
 #   Copyright (C) 2022 Christian Quiroz, OA4DOA <adm@dmr-peru.pe>
-#
+#   Updated by FreeDMR IT Dev Team - Copyright (C) 2023 https://www.freedmr.it 
+#     
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
 #   the Free Software Foundation; either version 3 of the License, or
@@ -81,6 +82,7 @@ class MoniDB:
                             logged_in TINYINT(1) DEFAULT False NOT NULL,
                             modified TINYINT(1) DEFAULT False NOT NULL,
                             psswd BLOB(256),
+                            dev_key VARCHAR(20),
                             last_seen INT NOT NULL) DEFAULT CHARSET=utf8mb4''')
 
                 txn.execute('''CREATE TABLE IF NOT EXISTS talkgroup_ids (

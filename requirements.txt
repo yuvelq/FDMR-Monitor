@@ -1,4 +1,5 @@
 Twisted
+wheel
 dmr_utils3
 bitstring
 autobahn
@@ -6,6 +7,9 @@ jinja2==2.11.3
 MarkupSafe==2.0.1
 pyOpenSSL==22.0.0
 service-identity==21.1.0
+cryptography==38.0.4
+pymysql
 mysqlclient
+mysql-client
+setproctitle
 setuptools
-wheel
