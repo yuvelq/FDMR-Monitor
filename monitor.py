@@ -685,7 +685,7 @@ def build_bridge_table(_bridges):
 build_time = 0
 build_deferred = None
 def build_stats():
-    global build_time
+    global build_time, build_deferred
     if time() - build_time < 1:
         if not build_deferred or build_deferred.called:
             reactor.callLater(1, build_stats)
