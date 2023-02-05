@@ -28,6 +28,7 @@
 
 # Standard modules
 import logging
+import sys
 from collections import deque
 from csv import DictReader as csv_dict_reader
 from json import load as jload
@@ -53,7 +54,9 @@ from dmr_utils3.utils import int_id, try_download, bytes_4
 # Local modules and config variables
 from mon_db import MoniDB
 from config import mk_config
+from log import create_logger
 
+__version__ = '1.0.0'
 
 # SP2ONG - Increase the value if HBlink link break occurs
 NetstringReceiver.MAX_LENGTH = 5000000
@@ -338,8 +341,11 @@ def db2dict(_id, _table):
 
 def error_hdl(failure):
     # Called when loop execution failed.
-    logger.error(f"Loop error: {failure.getBriefTraceback()}, stopping the reactor.")
-    reactor.stop()
+    if reactor.running:
+        logger.error(f"Loop error: {failure.getBriefTraceback()}, stopping the reactor.")
+        reactor.stop()
+    else:
+        sys.exit(failure)
 
 
 ##################################################
@@ -677,31 +683,37 @@ def build_bridge_table(_bridges):
 #          THIS CURRENTLY IS A TIMED CALL
 #
 build_time = 0
+build_deferred = None
 def build_stats():
     global build_time
-    if time() - build_time >= 1 or not build_time:
-        # Create a list with active groups
-        active_groups = [group for group, value in GROUPS.items() if value]
-        if CONFIG:
-            if "main" in active_groups:
-                render_fromdb("last_heard", CONF["GLOBAL"]["LH_ROWS"])
-            if "lnksys" in active_groups:
-                lnksys = "c" + ctemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
-                dashboard_server.broadcast(lnksys, "lnksys")
-            if "opb" in active_groups:
-                opb = "o" + otemplate.render(_table=CTABLE,dbridges=CONF["GLOBAL"]["BRDG_INC"])
-                dashboard_server.broadcast(opb, "opb")
-            if "statictg" in active_groups:
-                statictg = "s" + stemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
-                dashboard_server.broadcast(statictg, "statictg")
-            if "lsthrd_log" in active_groups:
-                render_fromdb("lstheard_log", LASTHEARD_LOG_ROWS)
+    if time() - build_time < 1:
+        if not build_deferred or build_deferred.called:
+            reactor.callLater(1, build_stats)
+        else:
+            build_deferred.reset(1)
+        return
+    # Create a list with active groups
+    active_groups = [group for group, value in GROUPS.items() if value]
+    if CONFIG:
+        if "main" in active_groups:
+            render_fromdb("last_heard", CONF["GLOBAL"]["LH_ROWS"])
+        if "lnksys" in active_groups:
+            lnksys = "c" + ctemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
+            dashboard_server.broadcast(lnksys, "lnksys")
+        if "opb" in active_groups:
+            opb = "o" + otemplate.render(_table=CTABLE,dbridges=CONF["GLOBAL"]["BRDG_INC"])
+            dashboard_server.broadcast(opb, "opb")
+        if "statictg" in active_groups:
+            statictg = "s" + stemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
+            dashboard_server.broadcast(statictg, "statictg")
+        if "lsthrd_log" in active_groups:
+            render_fromdb("lstheard_log", LASTHEARD_LOG_ROWS)
 
-        if BRIDGES and CONF["GLOBAL"]["BRDG_INC"]:
-            if "bridge" in active_groups:
-                bridges = "b" + btemplate.render(_table=BTABLE,dbridges=CONF["GLOBAL"]["BRDG_INC"])
-                dashboard_server.broadcast(bridges, "bridge")
-        build_time = time()
+    if BRIDGES and CONF["GLOBAL"]["BRDG_INC"]:
+        if "bridge" in active_groups:
+            bridges = "b" + btemplate.render(_table=BTABLE,dbridges=CONF["GLOBAL"]["BRDG_INC"])
+            dashboard_server.broadcast(bridges, "bridge")
+    build_time = time()
 
 
 @inlineCallbacks
@@ -1182,21 +1194,17 @@ def cleaning_loop():
 
 #######################################################################
 if __name__ == "__main__":
-    # Define loggin configuration
-    logger = logging.getLogger("fdmr-mon")
-    logger.setLevel(CONF["LOG"]["LOG_LEVEL"])
-    # Log handlers
-    fh = logging.FileHandler(CONF["LOG"]["P2F_LOG"], encoding="utf8")
-    fh.setLevel(level=CONF["LOG"]["LOG_LEVEL"])
-    ch = logging.StreamHandler()
-    ch.setLevel(level=CONF["LOG"]["LOG_LEVEL"])
-    # Log formatter
-    formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%Y-%m-%d %H:%M:%S")
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    # Add handlers
-    logger.addHandler(fh)
-    logger.addHandler(ch)
+    # Create logger
+    log_conf = {
+        'PATH': CONF["LOG"]["PATH"],
+        'LOG_FILE': CONF["LOG"]["LOG_FILE"],
+        'LOG_LEVEL': CONF["LOG"]["LOG_LEVEL"],
+        'LOG_HANDLERS': [
+            'console',
+            'file'
+            ]
+        }
+    logger = create_logger(log_conf)
 
     logger.info("monitor.py starting up")
     logger.info("\n\n\tCopyright (c) 2016-2022\n\tThe Regents of the K0USY Group. All rights "
