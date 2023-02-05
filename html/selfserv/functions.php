@@ -1,5 +1,5 @@
 <?php
-
+// Version 1.0.0
 /* Attempt to connect to MySQL database */
 function check_db() {
   try {

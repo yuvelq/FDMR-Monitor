@@ -25,10 +25,11 @@ from twisted.enterprise import adbapi
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 __author__     = 'Christian Quiroz, OA4DOA'
-__copyright__  = 'Copyright (c) 2022 Christian Quiroz, OA4DOA'
+__version__    = '1.0.0'
+__copyright__  = 'Copyright (c) 2023 Christian Quiroz, OA4DOA'
 __license__    = 'GNU GPLv3'
 __maintainer__ = 'Christian Quiroz, OA4DOA'
-__email__      = 'adm@dmr-peru.pe'
+__email__      = 'adm@dmr-peru.net'
 
 logger = logging.getLogger("fdmr-mon")
 
