@@ -92,7 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       $ts1_array = $_SESSION["opt_base"]["TS1="];
       foreach ($ts1_exp as $item) {
         if ($_POST["aod_ts1"] == "add") {
-          if (count($_SESSION["opt_base"]["TS1="]) < 10) {
+          if (count($_SESSION["opt_base"]["TS1="]) <= 12) {
             if (!in_array($item, $_SESSION["opt_base"]["TS1="]) and $item >= 10 and $item <= 16777215) {
               array_push($_SESSION["opt_base"]["TS1="], $item);
               $_SESSION["changed"] = True;
@@ -123,7 +123,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       $ts2_exp = explode(",", $ts2);
       foreach ($ts2_exp as $item) {
         if ($_POST["aod_ts2"] == "add") {
-          if (count($_SESSION["opt_base"]["TS2="]) <= 10) {
+          if (count($_SESSION["opt_base"]["TS2="]) <= 12) {
             if (!in_array($item, $_SESSION["opt_base"]["TS2="]) and $item >= 10 and $item <= 16777215) {
               array_push($_SESSION["opt_base"]["TS2="], $item);
               $_SESSION["changed"] = True;
