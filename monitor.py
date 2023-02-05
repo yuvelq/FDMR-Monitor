@@ -679,31 +679,37 @@ def build_bridge_table(_bridges):
 #          THIS CURRENTLY IS A TIMED CALL
 #
 build_time = 0
+build_deferred = None
 def build_stats():
-    global build_time
-    if time() - build_time >= 1 or not build_time:
-        # Create a list with active groups
-        active_groups = [group for group, value in GROUPS.items() if value]
-        if CONFIG:
-            if "main" in active_groups:
-                render_fromdb("last_heard", CONF["GLOBAL"]["LH_ROWS"])
-            if "lnksys" in active_groups:
-                lnksys = "c" + ctemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
-                dashboard_server.broadcast(lnksys, "lnksys")
-            if "opb" in active_groups:
-                opb = "o" + otemplate.render(_table=CTABLE,dbridges=CONF["GLOBAL"]["BRDG_INC"])
-                dashboard_server.broadcast(opb, "opb")
-            if "statictg" in active_groups:
-                statictg = "s" + stemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
-                dashboard_server.broadcast(statictg, "statictg")
-            if "lsthrd_log" in active_groups:
-                render_fromdb("lstheard_log", LASTHEARD_LOG_ROWS)
+    global build_time, build_deferred
+    if time() - build_time < 1:
+        if not build_deferred or build_deferred.called:
+            reactor.callLater(1, build_stats)
+        else:
+            build_deferred.reset(1)
+        return
+    # Create a list with active groups
+    active_groups = [group for group, value in GROUPS.items() if value]
+    if CONFIG:
+        if "main" in active_groups:
+            render_fromdb("last_heard", CONF["GLOBAL"]["LH_ROWS"])
+        if "lnksys" in active_groups:
+            lnksys = "c" + ctemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
+            dashboard_server.broadcast(lnksys, "lnksys")
+        if "opb" in active_groups:
+            opb = "o" + otemplate.render(_table=CTABLE,dbridges=CONF["GLOBAL"]["BRDG_INC"])
+            dashboard_server.broadcast(opb, "opb")
+        if "statictg" in active_groups:
+            statictg = "s" + stemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
+            dashboard_server.broadcast(statictg, "statictg")
+        if "lsthrd_log" in active_groups:
+            render_fromdb("lstheard_log", LASTHEARD_LOG_ROWS)
 
-        if BRIDGES and CONF["GLOBAL"]["BRDG_INC"]:
-            if "bridge" in active_groups:
-                bridges = "b" + btemplate.render(_table=BTABLE,dbridges=CONF["GLOBAL"]["BRDG_INC"])
-                dashboard_server.broadcast(bridges, "bridge")
-        build_time = time()
+    if BRIDGES and CONF["GLOBAL"]["BRDG_INC"]:
+        if "bridge" in active_groups:
+            bridges = "b" + btemplate.render(_table=BTABLE,dbridges=CONF["GLOBAL"]["BRDG_INC"])
+            dashboard_server.broadcast(bridges, "bridge")
+    build_time = time()
 
 
 @inlineCallbacks
