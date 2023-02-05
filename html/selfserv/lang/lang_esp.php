@@ -1,5 +1,5 @@
 <?php
-
+// Version 1.0.0
 define("_SELECT_DEVICE", "Selecciona el dispositivo que deseas administrar:");
 define("_NOT_LOGGED", "No se econtraron dispositivos en el servidor DMR con IP: ");
 define("_INVALID_IP", "IP no valida, vuelve a intentar después.");
@@ -26,6 +26,7 @@ define("_NOTE_MAIN", "Para poder administrar tu dispositivo por aquí, por favor
 define("_DATA_UPDT", "La información se actualizó correctamente &#x2714;");
 define("_DATA_UPDT_ERR", "Se produjo un error, intenta nuevamente después.");
 define("_SUBMIT", "Enviar");
+define("_DIALINFO", "Ingrese el número de tg asignado para Dial-TG, déjelo en blanco para por defecto del servidor o cero ( 0 ) para deshabilitar.");
 // Login
 define("_CALLSIGN", "Indicativo: ");
 define("_PASSWORD", "Contraseña: ");

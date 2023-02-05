@@ -38,29 +38,42 @@ if (isset($_SESSION["lang"])) {
 
 // Set variables
 $ts1 = $aod_ts1 = $ts2 = $aod_ts2 = $timer = $single = $voice = $status = $class = "";
-$ts1Err = $ts2Err = $timerErr = "";
+$ts1Err = $ts2Err = $timerErr = $dialErr = "";
 $_SESSION["changed"] = False;
 
 if ($_SERVER["REQUEST_METHOD"] == "GET") {
   // Declare default values for options
-  $_SESSION["opt_base"] = array("TS1="=>array(), "TS2="=>array(), "TIMER="=>"", "SINGLE="=>"", "VOICE="=>"");
+  $_SESSION["opt_base"] = array("TS1="=>array(), "TS2="=>array(), "TIMER="=>"", "SINGLE="=>"", "VOICE="=>"", "LANG="=>"", "DIAL="=>"");
   // If options not empty
   if ($_SESSION["hs_avail"][$_SESSION["opt_owner"]][0] != NULL) {
     $exp_opts = explode(";", $_SESSION["hs_avail"][$_SESSION["opt_owner"]][0]);
     foreach ($exp_opts as $item) {
       $item_exp = explode("=", $item);
       if (count($item_exp) > 1) {
-        $type = $item_exp[0];
-        if ($type == "TS1") {
-          $_SESSION["opt_base"]["TS1="] = explode(",", $item_exp[1]);
-        } elseif ($type == "TS2") {
-          $_SESSION["opt_base"]["TS2="] = explode(",", $item_exp[1]);
-        } elseif ($type == "TIMER") {
-          $_SESSION["opt_base"]["TIMER="] = $item_exp[1];
-        } elseif ($type == "SINGLE") {
-          $_SESSION["opt_base"]["SINGLE="] = $item_exp[1];
-        } elseif ($type == "VOICE") {
-          $_SESSION["opt_base"]["VOICE="] = $item_exp[1];
+        $key = $item_exp[0];
+        $value = $item_exp[1];
+        if ($key == "TS1") {
+          foreach(explode(",", $value) as $tg) {
+            if ($tg != ""){
+              array_push($_SESSION["opt_base"]["TS1="], $tg);
+            }
+          }
+        } elseif ($key == "TS2") {
+          foreach(explode(",", $value) as $tg) {
+            if ($tg != ""){
+              array_push($_SESSION["opt_base"]["TS2="], $tg);
+            }
+          }
+        } elseif ($key == "TIMER") {
+          $_SESSION["opt_base"]["TIMER="] = $value;
+        } elseif ($key == "SINGLE") {
+          $_SESSION["opt_base"]["SINGLE="] = $value;
+        } elseif ($key == "VOICE") {
+          $_SESSION["opt_base"]["VOICE="] = $value;
+        }elseif ($key == "LANG") {
+          $_SESSION["opt_base"]["LANG="] = $value;
+        }elseif ($key == "DIAL") {
+          $_SESSION["opt_base"]["DIAL="] = $value;
         }
       }
     }
@@ -79,8 +92,8 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       $ts1_array = $_SESSION["opt_base"]["TS1="];
       foreach ($ts1_exp as $item) {
         if ($_POST["aod_ts1"] == "add") {
-          if (count($_SESSION["opt_base"]["TS1="]) < 8) {
-            if (!in_array($item, $_SESSION["opt_base"]["TS1="]) and $item >= 10 and $item <= 9999999) {
+          if (count($_SESSION["opt_base"]["TS1="]) < 10) {
+            if (!in_array($item, $_SESSION["opt_base"]["TS1="]) and $item >= 10 and $item <= 16777215) {
               array_push($_SESSION["opt_base"]["TS1="], $item);
               $_SESSION["changed"] = True;
             } else {continue;}
@@ -110,8 +123,8 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       $ts2_exp = explode(",", $ts2);
       foreach ($ts2_exp as $item) {
         if ($_POST["aod_ts2"] == "add") {
-          if (count($_SESSION["opt_base"]["TS2="]) <= 8) {
-            if (!in_array($item, $_SESSION["opt_base"]["TS2="]) and $item >= 10 and $item <= 9999999) {
+          if (count($_SESSION["opt_base"]["TS2="]) <= 10) {
+            if (!in_array($item, $_SESSION["opt_base"]["TS2="]) and $item >= 10 and $item <= 16777215) {
               array_push($_SESSION["opt_base"]["TS2="], $item);
               $_SESSION["changed"] = True;
             } else {continue;}
@@ -181,14 +194,41 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
       $_SESSION["changed"] = True;
     }
   }
-  // Make the options string and send it to the DMR server
-  if ($_SESSION["changed"] and !$ts1Err and !$ts2Err and !$timerErr) {
-    $final_opt = "";
+   //lang
+   if (isset($_POST["lang"])) {
+    $lang = check_input($_POST["lang"]);
 
-    foreach ($_SESSION["opt_base"] as $key=>$value) {
+    if ($lang != $_SESSION["opt_base"]["LANG="]) {
+      $_SESSION["opt_base"]["LANG="] = $lang;
+      $_SESSION["changed"] = True;
+    }
+  }
+  //dial
+  if (isset($_POST["dial"])) {
+    $dial = check_input($_POST["dial"]);
+
+    if ($dial != $_SESSION["opt_base"]["DIAL="]) {
+      if ($dial === "") {
+        $_SESSION["opt_base"]["DIAL="] = $dial;
+        $_SESSION["changed"] = True;
+      } elseif ($dial != "" and is_numeric($dial) and intval($dial) >= 0 and intval($dial) <= 16777215) {
+        $_SESSION["opt_base"]["DIAL="] = intval($dial);
+        $_SESSION["changed"] = True;
+      } else {
+        $dialErr = _TIMERERR_VAL.$dial;
+      }
+    }
+  }
+  // Make the options string and send it to the DMR server
+  if ($_SESSION["changed"]) {
+    $final_opt = "";
+    foreach ($_SESSION["opt_base"] as $key => $value) {
+      if ($key == "TS1=" and $ts1Err or $key == "TS2=" and $ts2Err or $key == "TIMER=" and $timerErr or $key == "DIAL=" and $dialErr) {
+        continue;
+      }
       if (gettype($value) == "array") {
         if (count($value) < 1) {
-          continue;
+          $value = "";
         } else {
           $value = implode(",", $value);
         }
@@ -222,7 +262,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
   <title>FDMR Monitor - Options</title>
   <link rel="stylesheet" type="text/css" href="css/styles.php">
   <link rel="stylesheet" type="text/css" href="css/selfserv_css.php">
-  <meta name="description" content="Copyright (c) 2016-22.The Regents of the K0USY Group. All rights reserved. Version OA4DOA 2022 (v230422)">
+  <meta name="description" content="Copyright (c) 2016-23.The Regents of the K0USY Group. All rights reserved. Version OA4DOA">
 </head>
 <body>
   <img class="img-top" src="img/logo.png?random=323527528432525.24234" alt="">
@@ -232,7 +272,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
     <legend><b>.: Options form :.</b></legend>
     <!-- Language -->
     <script>
-    function changeLang(){
+    function changeLang() {
       document.getElementById("form_lang").submit();
     }
     </script>
@@ -271,6 +311,28 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         <option value="enable" <?php if($_SESSION["opt_base"]["VOICE="]=="1"){echo "selected";}?>><?php echo _ENABLE?></option>
         <option value="disable" <?php if($_SESSION["opt_base"]["VOICE="]=="0"){echo "selected";}?>><?php echo _DISABLE?></option>
       </select>
+      <!-- Lang -->
+      <h3>Server Voice Language</h3>
+      <div class="actual"><?php echo _ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["LANG="]==""){echo _DEFAULT_STS;}else{echo $_SESSION["opt_base"]["LANG="];}?></span></div>
+      <select name="lang" >
+        <option value="" <?php if($_SESSION["opt_base"]["LANG="]==""){echo "selected";}?>><?php echo _DEFAULT?></option>
+        <option value="cy_GB" <?php if($_SESSION["opt_base"]["LANG="]=="cy_GB"){echo "selected";}?>><?php echo "cy_GB"?></option>
+        <option value="de_DE" <?php if($_SESSION["opt_base"]["LANG="]=="de_DE"){echo "selected";}?>><?php echo "de_DE"?></option>
+        <option value="el_GR" <?php if($_SESSION["opt_base"]["LANG="]=="el_GR"){echo "selected";}?>><?php echo "el_GR"?></option>
+        <option value="en_GB" <?php if($_SESSION["opt_base"]["LANG="]=="en_GB"){echo "selected";}?>><?php echo "en_GB"?></option>
+        <option value="en_GB_2" <?php if($_SESSION["opt_base"]["LANG="]=="en_GB_2"){echo "selected";}?>><?php echo "en_GB_2"?></option>
+        <option value="es_ES" <?php if($_SESSION["opt_base"]["LANG="]=="es_ES"){echo "selected";}?>><?php echo "es_ES"?></option>
+        <option value="es_ES_2" <?php if($_SESSION["opt_base"]["LANG="]=="es_ES_2"){echo "selected";}?>><?php echo "es_ES_2"?></option>
+        <option value="fr_FR" <?php if($_SESSION["opt_base"]["LANG="]=="fr_FR"){echo "selected";}?>><?php echo "fr_FR"?></option>
+        <option value="pt_PT" <?php if($_SESSION["opt_base"]["LANG="]=="pt_PT"){echo "selected";}?>><?php echo "pt_PT"?></option>
+        <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="th_TH"){echo "selected";}?>><?php echo "th_TH"?></option>
+      </select>
+      <!-- Dial -->
+      <h3>Dial: <span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?php echo _DIALINFO?></span></span></h3>
+      <div class="actual"> <?php echo _ACTUAL_SELECTION?><span class="actl-item"><?php if($_SESSION["opt_base"]["DIAL="]===""){echo _DEFAULT_STS;} else{echo $_SESSION["opt_base"]["DIAL="];}?></span></div>
+      <input type="text" name="dial" pattern="[0-9\s]+" value="<?php if($_SESSION["opt_base"]["DIAL="] === ""){echo "";} else{echo $_SESSION["opt_base"]["DIAL="];}?>" title="<?php echo _TIMER_PATT?>">
+      <p class="error"><?php echo $dialErr?></p>
+
       <div class="<?php echo $class?>"><b><?php echo $status?></b></div>
       <input class="form-button" type="submit" value="<?php echo _SUBMIT?>">
     </form>
@@ -278,9 +340,9 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
   </fieldset>
   <footer>
     <p>
-      Copyright (c) 2016-2022<br>
+      Copyright (c) 2016-<?php echo date("Y");?><br>
       The Regents of the <a target="_blank" href=http://k0usy.mystrikingly.com >K0USY Group</a>. All rights reserved.<br>
-      <a title="FDMR Monitor OA4DOA v230422" target="_blank" href=https://github.com/yuvelq/FDMR-Monitor.git>Version OA4DOA 2022</a>
+      <a title="FDMR Monitor OA4DOA v1.0.0" target="_blank" href=https://github.com/yuvelq/FDMR-Monitor.git>Version OA4DOA</a>
       <!-- THIS COPYRIGHT NOTICE MUST BE DISPLAYED AS A CONDITION OF THE LICENCE GRANT FOR THIS SOFTWARE. ALL DERIVATEIVES WORKS MUST CARRY THIS NOTICE -->
     </p>
   </footer>
