@@ -326,6 +326,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         <option value="fr_FR" <?php if($_SESSION["opt_base"]["LANG="]=="fr_FR"){echo "selected";}?>><?php echo "fr_FR"?></option>
         <option value="pt_PT" <?php if($_SESSION["opt_base"]["LANG="]=="pt_PT"){echo "selected";}?>><?php echo "pt_PT"?></option>
         <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="th_TH"){echo "selected";}?>><?php echo "th_TH"?></option>
+        <option value="CW" <?php if($_SESSION["opt_base"]["LANG="]=="CW"){echo "selected";}?>><?php echo "CW"?></option>
       </select>
       <!-- Dial -->
       <h3>Dial: <span class="tooltip"><img src="img/info.png" alt=""><span class="tooltiptext"><?php echo _DIALINFO?></span></span></h3>
