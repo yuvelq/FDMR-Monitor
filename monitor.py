@@ -684,7 +684,7 @@ def build_stats():
     global build_time, build_deferred
     if time() - build_time < 1:
         if not build_deferred or build_deferred.called:
-            reactor.callLater(1, build_stats)
+            build_deferred = reactor.callLater(1, build_stats)
         else:
             build_deferred.reset(1)
         return
