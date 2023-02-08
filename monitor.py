@@ -683,30 +683,32 @@ build_deferred = None
 def build_stats():
     global build_time, build_deferred
     if time() - build_time < 1:
-        if not build_deferred or build_deferred.called:
+        if not build_deferred or build_deferred.called or build_deferred.cancelled:
             build_deferred = reactor.callLater(1, build_stats)
         else:
             build_deferred.reset(1)
         return
-    # Create a list with active groups
-    active_groups = [group for group, value in GROUPS.items() if value]
+    else:
+        if build_deferred and not build_deferred.called and not build_deferred.cancelled:
+            build_deferred.cancel()
+
     if CONFIG:
-        if "main" in active_groups:
+        if GROUPS["Main"]:
             render_fromdb("last_heard", CONF["GLOBAL"]["LH_ROWS"])
-        if "lnksys" in active_groups:
+        if GROUPS["lnksys"]:
             lnksys = "c" + ctemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
             dashboard_server.broadcast(lnksys, "lnksys")
-        if "opb" in active_groups:
+        if GROUPS["opb"]:
             opb = "o" + otemplate.render(_table=CTABLE,dbridges=CONF["GLOBAL"]["BRDG_INC"])
             dashboard_server.broadcast(opb, "opb")
-        if "statictg" in active_groups:
+        if GROUPS["statictg"]:
             statictg = "s" + stemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
             dashboard_server.broadcast(statictg, "statictg")
-        if "lsthrd_log" in active_groups:
+        if GROUPS["lsthrd_log"]:
             render_fromdb("lstheard_log", LASTHEARD_LOG_ROWS)
 
     if BRIDGES and CONF["GLOBAL"]["BRDG_INC"]:
-        if "bridge" in active_groups:
+        if GROUPS["bridge"]:
             bridges = "b" + btemplate.render(_table=BTABLE,dbridges=CONF["GLOBAL"]["BRDG_INC"])
             dashboard_server.broadcast(bridges, "bridge")
     build_time = time()
@@ -1120,11 +1122,8 @@ class dashboard(WebSocketServerProtocol):
                             _bmessage = ("l" + _message).encode("utf-8")
                             self.sendMessage(_bmessage)
 
-    def connectionLost(self, reason):
-        WebSocketServerProtocol.connectionLost(self, reason)
-        self.factory.unregister(self)
-
     def onClose(self, wasClean, code, reason):
+        self.factory.unregister(self)
         logger.info(f"WebSocket connection closed: {reason}")
 
 
