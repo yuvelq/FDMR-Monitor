@@ -693,7 +693,7 @@ def build_stats():
             build_deferred.cancel()
 
     if CONFIG:
-        if GROUPS["Main"]:
+        if GROUPS["main"]:
             render_fromdb("last_heard", CONF["GLOBAL"]["LH_ROWS"])
         if GROUPS["lnksys"]:
             lnksys = "c" + ctemplate.render(_table=CTABLE, emaster=CONF["GLOBAL"]["EMPTY_MASTERS"])
