@@ -759,7 +759,7 @@ def build_tgstats():
         CTABLE["SERVER"] ={"TS1":[],"TS2":[]}
         tmp_dict = {}
         srv_info = 0
-        # make a list with occupied systems
+        # make a list with systems in use
         for system in CTABLE["MASTERS"]:
             if not CTABLE["MASTERS"][system]["PEERS"]:
                 continue
@@ -767,9 +767,9 @@ def build_tgstats():
                 if peer == 4294967295:
                     continue
                 if system not in tmp_dict:
-                    tmp_dict[system] = [peer]
+                    tmp_dict[system] = {'peers': [peer], 1: [], 2: []} 
                 else:
-                    tmp_dict[system].append(peer)
+                    tmp_dict[system]['peers'].append(peer)
 
         # Get the static TG of the server
         for system in CONFIG:
@@ -789,24 +789,27 @@ def build_tgstats():
                 if isinstance(CONFIG[system]["TS1_STATIC"], bool):
                     CTABLE["MASTERS"][system]["PEERS"][peer]["TS1_STATIC"] = []
                 else:
-                    CTABLE["MASTERS"][system]["PEERS"][peer]["TS1_STATIC"] = (
-                        CONFIG[system]["TS1_STATIC"].split(","))
+                    split_tgs = CONFIG[system]["TS1_STATIC"].split(",")
+                    CTABLE["MASTERS"][system]["PEERS"][peer]["TS1_STATIC"] = split_tgs
+                    tmp_dict[system][1].extend(split_tgs) 
+
                 if isinstance(CONFIG[system]["TS2_STATIC"], bool):
                     CTABLE["MASTERS"][system]["PEERS"][peer]["TS2_STATIC"] = []
                 else:
-                    CTABLE["MASTERS"][system]["PEERS"][peer]["TS2_STATIC"] = (
-                        CONFIG[system]["TS2_STATIC"].split(","))
+                    split_tgs = CONFIG[system]["TS2_STATIC"].split(",")
+                    CTABLE["MASTERS"][system]["PEERS"][peer]["TS2_STATIC"] = split_tgs
+                    tmp_dict[system][2].extend(split_tgs) 
+
     # Find Single TG
     if CTABLE and BRIDGES and tmp_dict:
         for bridge in BRIDGES:
             for system in BRIDGES[bridge]:
                 if system["ACTIVE"] == False or system["SYSTEM"][:3] == "OBP" or system["TO_TYPE"] == "OFF":
                     continue
-                if system["SYSTEM"] not in tmp_dict:
-                    continue
-                for peer in CTABLE["MASTERS"][system["SYSTEM"]]["PEERS"]:
-                    CTABLE["MASTERS"][system["SYSTEM"]]["PEERS"][peer]["SINGLE_TS"+str(system["TS"])] = {
-                        "TGID": int_id(system["TGID"]), "TO": time_str(system["TIMER"],"to")}
+                if system["SYSTEM"] in tmp_dict and str(int_id(system["TGID"])) not in tmp_dict[system["SYSTEM"]][system["TS"]]:
+                    for peer in CTABLE["MASTERS"][system["SYSTEM"]]["PEERS"]:
+                        CTABLE["MASTERS"][system["SYSTEM"]]["PEERS"][peer]["SINGLE_TS"+str(system["TS"])] = {
+                            "TGID": int_id(system["TGID"]), "TO": ''}
 
 
 def timeout_clients():
@@ -838,67 +841,72 @@ def rts_update(p):
     timeout = time()
     if system in CTABLE["MASTERS"]:
         for peer in CTABLE["MASTERS"][system]["PEERS"]:
+            tgt_peer = CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]
             if sourcePeer == peer:
                 crxstatus = "RX"
             else:
                 crxstatus = "TX"
             if action == "START":
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["TIMEOUT"] = timeout
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["TS"] = True
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["TYPE"] = callType
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["SUB"] = (
-                    f"{alias_short(sourceSub, subscriber_ids)} ({sourceSub})")
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["CALL"] = (
-                    f"{alias_call(sourceSub, subscriber_ids)}")
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["SRC"] = peer
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["DEST"] = (
-                    f"TG {destination}&nbsp;&nbsp;&nbsp;&nbsp;{alias_tgid(destination,talkgroup_ids)}")
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["TG"] = f"TG&nbsp;{destination}"
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["TRX"] = crxstatus
+                tgt_peer["TIMEOUT"] = timeout
+                tgt_peer["TS"] = True
+                tgt_peer["TYPE"] = callType
+                tgt_peer["SUB"] = f"{alias_short(sourceSub, subscriber_ids)} ({sourceSub})"
+                tgt_peer["CALL"] = f"{alias_call(sourceSub, subscriber_ids)}"
+                tgt_peer["SRC"] = peer
+                tgt_peer["DEST"] = (
+                    f"TG {destination}&nbsp;&nbsp;&nbsp;&nbsp;{alias_tgid(destination,talkgroup_ids)}"
+                    )
+                tgt_peer["TG"] = f"TG&nbsp;{destination}"
+                tgt_peer["TRX"] = crxstatus
+
             if action == "END":
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["TS"] = False
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["TYPE"] = ""
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["SUB"] = ""
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["CALL"] = ""
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["SRC"] = ""
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["DEST"] = ""
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["TG"] = ""
-                CTABLE["MASTERS"][system]["PEERS"][peer][timeSlot]["TRX"] = ""
+                tgt_peer["TS"] = False
+                tgt_peer["TYPE"] = ""
+                tgt_peer["SUB"] = ""
+                tgt_peer["CALL"] = ""
+                tgt_peer["SRC"] = ""
+                tgt_peer["DEST"] = ""
+                tgt_peer["TG"] = ""
+                tgt_peer["TRX"] = ""
 
     if system in CTABLE["OPENBRIDGES"]:
         if action == "START":
             CTABLE["OPENBRIDGES"][system]["STREAMS"][streamId] = (
-                trx, alias_call(sourceSub, subscriber_ids),f"{destination}",timeout)
+                trx, alias_call(sourceSub, subscriber_ids),f"{destination}",timeout
+                )
         if action == "END":
             if streamId in CTABLE["OPENBRIDGES"][system]["STREAMS"]:
                 del CTABLE["OPENBRIDGES"][system]["STREAMS"][streamId]
 
     if system in CTABLE["PEERS"]:
+        tgt_system =  CTABLE["PEERS"][system][timeSlot]
         if trx == "RX":
             prxstatus = "RX"
         else:
             prxstatus = "TX"
 
         if action == "START":
-            CTABLE["PEERS"][system][timeSlot]["TIMEOUT"] = timeout
-            CTABLE["PEERS"][system][timeSlot]["TS"] = True
-            CTABLE["PEERS"][system][timeSlot]["SUB"]= (
+            tgt_system["TIMEOUT"] = timeout
+            tgt_system["TS"] = True
+            tgt_system["SUB"]= (
                 f"{alias_short(sourceSub, subscriber_ids)} ({sourceSub})")
-            CTABLE["PEERS"][system][timeSlot]["CALL"] = f"{alias_call(sourceSub, subscriber_ids)}"
-            CTABLE["PEERS"][system][timeSlot]["SRC"] = sourcePeer
-            CTABLE["PEERS"][system][timeSlot]["DEST"]= (
-                f"TG {destination}&nbsp;&nbsp;&nbsp;&nbsp;{alias_tgid(destination,talkgroup_ids)}")
-            CTABLE["PEERS"][system][timeSlot]["TG"]= f"TG&nbsp;{destination}"
-            CTABLE["PEERS"][system][timeSlot]["TRX"] = prxstatus
+            tgt_system["CALL"] = f"{alias_call(sourceSub, subscriber_ids)}"
+            tgt_system["SRC"] = sourcePeer
+            tgt_system["DEST"]= (
+                f"TG {destination}&nbsp;&nbsp;&nbsp;&nbsp;{alias_tgid(destination,talkgroup_ids)}"
+                )
+            tgt_system["TG"]= f"TG&nbsp;{destination}"
+            tgt_system["TRX"] = prxstatus
+
         if action == "END":
-            CTABLE["PEERS"][system][timeSlot]["TS"] = False
-            CTABLE["PEERS"][system][timeSlot]["TYPE"] = ""
-            CTABLE["PEERS"][system][timeSlot]["SUB"] = ""
-            CTABLE["PEERS"][system][timeSlot]["CALL"] = ""
-            CTABLE["PEERS"][system][timeSlot]["SRC"] = ""
-            CTABLE["PEERS"][system][timeSlot]["DEST"] = ""
-            CTABLE["PEERS"][system][timeSlot]["TG"] = ""
-            CTABLE["PEERS"][system][timeSlot]["TRX"] = ""
+            tgt_system["TS"] = False
+            tgt_system["TYPE"] = ""
+            tgt_system["SUB"] = ""
+            tgt_system["CALL"] = ""
+            tgt_system["SRC"] = ""
+            tgt_system["DEST"] = ""
+            tgt_system["TG"] = ""
+            tgt_system["TRX"] = ""
 
     build_stats()
 
@@ -967,7 +975,7 @@ def process_message(_bmessage):
                         db_conn.ins_lstheard(p[9], p[0], p[3], p[8], p[6])
 
                 # Removing obsolete entries from the sys_dict (3 sec)
-                if not sys_dict["lst_clean"] or time() - sys_dict["lst_clean"] >= 3:
+                if time() - sys_dict["lst_clean"] >= 3:
                     sys_dict["lst_clean"] = time()
                     for k, v in list(sys_dict.items()):
                         if k == "lst_clean":
@@ -976,6 +984,7 @@ def process_message(_bmessage):
                             del sys_dict[k]
 
             elif p[1] == "START":
+                logger.info(f"BRIDGE EVENT: {_message[1:]}")
                 log_message = (
                     f"{_now[10:19]} {p[0][6:]:5.5s} {p[1]:5.5s} SYS: {p[3]:10.10s} SRC_ID: {p[5]:5.5s} "
                     f"TS: {p[7]} TGID: {p[8]:7.7s} {alias_tgid(int(p[8]), talkgroup_ids):17.17s} "

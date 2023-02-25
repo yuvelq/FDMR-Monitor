@@ -10,7 +10,7 @@
       <th class="th4wd">Slot</th>
       <th class="th5wd">Static TG</th>
       <th class="th6wd">Single TG</th>
-      <th class="th7wd">T/O</th>
+      <!-- <th class="th7wd">T/O</th> -->
     </tr>
     {% for _master in _table['MASTERS'] %}
     {% if ((_table['MASTERS'][_master]['PEERS']|length==0 or _table['MASTERS'][_master]['PEERS']|length>0) and
@@ -43,12 +43,12 @@
         <td class="txt-b70101 ts1-bkgnd">TS1</td>
         <td class="ts1-bkgnd"><b>{{ _cdata['TS1_STATIC']|join(', ') }}</b></td>
         <td class="ts1-bkgnd txt-008000"><b>{{ _cdata['SINGLE_TS1']['TGID'] if 'SINGLE_TS1' in _cdata else '' }}</b></td>
-        <td class="ts1-bkgnd txt-008000"><b>{{ _cdata['SINGLE_TS1']['TO'] if 'SINGLE_TS1' in _cdata else '' }}</b></td>
+        <!-- <td class="ts1-bkgnd txt-008000"><b>{{ _cdata['SINGLE_TS1']['TO'] | safe if 'SINGLE_TS1' in _cdata else '' }}</b></td> -->
       <tr>
         <td><span class="txt-3a4aa6">TS2</span></td>
         <td><b>{{ _cdata['TS2_STATIC']|join(', ') }}</b></td>
         <td class="txt-008000"><b>{{ _cdata['SINGLE_TS2']['TGID'] if 'SINGLE_TS2' in _cdata else '' }}</b></td>
-        <td class="txt-008000"><b>{{ _cdata['SINGLE_TS2']['TO'] if 'SINGLE_TS2' in _cdata else '' }}</b></td>
+        <!-- <td class="txt-008000"><b>{{ _cdata['SINGLE_TS2']['TO'] | safe if 'SINGLE_TS2' in _cdata else '' }}</b></td> -->
       </tr>
     </tr>
       {% endfor %}
