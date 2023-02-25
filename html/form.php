@@ -322,7 +322,6 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         <option value="en_GB" <?php if($_SESSION["opt_base"]["LANG="]=="en_GB"){echo "selected";}?>><?php echo "en_GB"?></option>
         <option value="en_GB_2" <?php if($_SESSION["opt_base"]["LANG="]=="en_GB_2"){echo "selected";}?>><?php echo "en_GB_2"?></option>
         <option value="es_ES" <?php if($_SESSION["opt_base"]["LANG="]=="es_ES"){echo "selected";}?>><?php echo "es_ES"?></option>
-        <option value="es_ES_2" <?php if($_SESSION["opt_base"]["LANG="]=="es_ES_2"){echo "selected";}?>><?php echo "es_ES_2"?></option>
         <option value="fr_FR" <?php if($_SESSION["opt_base"]["LANG="]=="fr_FR"){echo "selected";}?>><?php echo "fr_FR"?></option>
         <option value="pt_PT" <?php if($_SESSION["opt_base"]["LANG="]=="pt_PT"){echo "selected";}?>><?php echo "pt_PT"?></option>
         <option value="th_TH" <?php if($_SESSION["opt_base"]["LANG="]=="th_TH"){echo "selected";}?>><?php echo "th_TH"?></option>
