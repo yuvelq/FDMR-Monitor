@@ -1,60 +1,39 @@
-from logging import getLogger
-from pathlib import Path
-from logging.config import dictConfig
+import sys
 
-__author__ = 'Christian Quiroz, OA4DOA'
-__verion__ = '1.0.0'
-__copyright__ = 'Copyright (c) 2023 Christian Quiroz, OA4DOA'
-__license__ = 'GNU GPLv3'
-__maintainer__ = 'Christian Quiroz, OA4DOA'
-__email__ = 'adm@dmr-peru.net'
+from twisted.logger import Logger, LogLevelFilterPredicate, LogLevel, FilteringLogObserver, textFileLogObserver, globalLogPublisher
+
+def get_log_level(level):
+    level = level.lower()
+    if level == 'info':
+        _level = LogLevel.info
+    elif level == 'debug':
+        _level = LogLevel.debug
+    elif level == 'warn':
+        _level = LogLevel.warn
+    elif level == 'error':
+        _level = LogLevel.error
+    elif level == 'critical':
+        _level = LogLevel.critical
+    else:
+        _level = LogLevel.warn
+    return _level
+
 
 def create_logger(conf):
-    dictConfig({
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'std_format': {
-                'format': '%(asctime)s %(levelname)s %(message)s',
-                'datefmt' : '%Y-%m-%d %H:%M:%S'
-            }
-        },
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'std_format',
-                'level': conf['LOG_LEVEL']
-            },
-            'file': {
-                'class': 'logging.FileHandler',
-                'formatter': 'std_format',
-                'filename': Path(conf['PATH'], conf['LOG_FILE']),
-                'level': conf['LOG_LEVEL']
-            }
-        },
-        'root': {
-            'handlers': conf['LOG_HANDLERS'],
-            'level': 'NOTSET',
-        }
-    })
+    level = get_log_level(conf['LOG_LEVEL'])
 
-    return getLogger(__name__)
+    log_level = LogLevelFilterPredicate(level)
+    time_format = '%b %m %H:%M:%S.%f'
 
+    logger = Logger()
 
-if __name__ == "__main__":
-    log_conf = {
-        'PATH': './',
-        'LOG_FILE': 'test.log',
-        'LOG_LEVEL': 'DEBUG',
-        'LOG_HANDLERS': [
-            'console',
-            'file'
-        ]
-    }
+    handlers = conf['LOG_HANDLERS'].replace(' ', '').lower().split(',')
+    if 'console' in handlers:
+        console = FilteringLogObserver(textFileLogObserver(sys.stdout, time_format), [log_level])
+        globalLogPublisher.addObserver(console)
 
-    logger = create_logger(log_conf)
-    
-    logger.debug('This is debug')
-    logger.info('test')
-    logger.warning('test1')
-    logger.error("This's an error")
+    if 'file' in handlers:
+        file = FilteringLogObserver(textFileLogObserver(open(conf['LOG_FILE'], 'a'), time_format), [log_level])
+        globalLogPublisher.addObserver(file)
+
+    return (logger, log_level)

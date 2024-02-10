@@ -1,7 +1,7 @@
 <!-- Version 1.0.0 -->
 <fieldset class="big">
   <legend><b>.: OpenBridge status :.</b></legend>
-  {% if _table['OPENBRIDGES']|length >0 %}
+  {% if _table['OPENBRIDGES']|length > 0 %}
   <table class="opb">
   <tr class="theme_color">
     <th class="th1wd">OpenBridge<br>Systems</th>
@@ -10,7 +10,7 @@
   </tr>
   {% for _openbridge in _table['OPENBRIDGES'] %}
   <tr>
-    <td class="col1"><b>{{ _openbridge}}</b></td>
+    <td class="col1"><b>{{_openbridge}}</b></td>
     <td class="col2">Net ID: <b>{{ _table['OPENBRIDGES'][_openbridge]['NETWORK_ID'] }}</b></td>
     <td class="col3">{% for entry in _table['OPENBRIDGES'][_openbridge]['STREAMS']  %}[<span class="{{ 'txt-008000' if _table['OPENBRIDGES'][_openbridge]['STREAMS'][entry][0] == 'RX' else 'txt-red' }}">{{ _table['OPENBRIDGES'][_openbridge]['STREAMS'][entry][0] }}</span>: <span class="txt-0065ff"> {{ _table['OPENBRIDGES'][_openbridge]['STREAMS'][entry][1] }}</span> >> <span class="txt-b5651d">TG&nbsp;{{ _table['OPENBRIDGES'][_openbridge]['STREAMS'][entry][2] }}</span>]&nbsp;{% endfor %}</td>
   </tr>

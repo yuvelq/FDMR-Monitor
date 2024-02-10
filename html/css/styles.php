@@ -326,7 +326,7 @@ table.opb {
   margin-top:5px;
   margin-bottom:5px;
 }
-.opb .col1 {text-align: left; padding-left: 20px;}
+.opb .col1 {text-align: left; padding-left: 20px;  height: 40px;}
 .opb .col2 {font-size: 9pt;}
 .opb .col3 {font-size: 9pt; font-weight: 600; color:#464646;}
 
