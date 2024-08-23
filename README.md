@@ -2,6 +2,9 @@
 
 ***This version has been forked from HBMonitor V2 by SP2ONG 2019-2022***
 
+> [!IMPORTANT]
+> This repository has been archived and will not be maintained in the future.
+
 Some of the changes in FDMR Monitor:
 - TG Count page added.
 - Config file added.
